@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Подпеваем — тексты песен</title>
+<style>
+  :root {
+    --bg: #0f0a1a;
+    --bg-2: #1a0f2e;
+    --ink: #f6efe7;
+    --muted: #b9a8d9;
+    --accent: #ffb84d;
+    --accent-2: #ff5e7e;
+    --card: rgba(255, 255, 255, 0.05);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --card-hover: rgba(255, 184, 77, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 800px at 80% -10%, rgba(255, 94, 126, 0.18), transparent 60%),
+      radial-gradient(900px 700px at -10% 110%, rgba(255, 184, 77, 0.12), transparent 60%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 100px;
+  }
+
+  /* Hero */
+  .hero { text-align: center; margin-bottom: 40px; }
+  .hero .kicker {
+    font-size: 12px;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 7vw, 64px);
+    margin: 0;
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p {
+    margin: 16px 0 0;
+    font-size: clamp(14px, 1.6vw, 16px);
+    color: var(--muted);
+    max-width: 50ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Filter input */
+  .filter {
+    margin: 0 0 20px;
+    width: 100%;
+    padding: 14px 18px;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .filter::placeholder { color: var(--muted); }
+  .filter:focus { border-color: var(--accent); }
+
+  /* Song list */
+  .songs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .songs li.hidden { display: none; }
+  .songs a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: background .15s, border-color .15s, transform .12s;
+  }
+  .songs a:hover, .songs a:focus-visible {
+    background: var(--card-hover);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .songs .num {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 184, 77, 0.12);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .songs .meta { flex: 1; min-width: 0; }
+  .songs .title {
+    font-size: clamp(15px, 1.6vw, 17px);
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: 2px;
+  }
+  .songs .artist {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .songs .arrow {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: 18px;
+    transition: color .15s, transform .15s;
+  }
+  .songs a:hover .arrow {
+    color: var(--accent);
+    transform: translateX(2px);
+  }
+
+  .back-to-quiz {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(15, 10, 26, 0.85);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+    padding: 10px 18px;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 13px;
+    z-index: 10;
+  }
+  .back-to-quiz:hover { color: var(--accent); }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    display: none;
+    font-style: italic;
+  }
+  .empty-state.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <div class="kicker">39.9 пока · подпеваем</div>
+    <h1>Тексты песен</h1>
+    <p>Жми на песню — откроется поиск с текстом в новой вкладке. Поём вместе с группой!</p>
+  </div>
+
+  <input type="text" class="filter" id="filter" placeholder="🔍 Найти песню или артиста" autocomplete="off" />
+
+  <ul class="songs" id="songs">
+    <!-- Songs will be rendered by JS from list below -->
+  </ul>
+
+  <div class="empty-state" id="empty">Ничего не найдено :(</div>
+
+</div>
+
+<a class="back-to-quiz" href="quiz.html">← К квизу</a>
+
+<script>
+  const songs = [
+    { n: 1,  title: "Нас не догонят",                  artist: "t.A.T.u.",                 lang: "ru" },
+    { n: 2,  title: "Кукушка",                          artist: "Полина Гагарина",         lang: "ru" },
+    { n: 3,  title: "Напитки покрепче",                 artist: "Звери",                    lang: "ru" },
+    { n: 4,  title: "Южная ночь",                       artist: "Звери",                    lang: "ru" },
+    { n: 5,  title: "Ариведерчи",                       artist: "Земфира",                  lang: "ru" },
+    { n: 6,  title: "Искала",                           artist: "Земфира",                  lang: "ru" },
+    { n: 7,  title: "Ракеты",                           artist: "Земфира",                  lang: "ru" },
+    { n: 8,  title: "Мой рок-н-ролл",                   artist: "Би-2",                     lang: "ru" },
+    { n: 9,  title: "Люби меня, люби",                  artist: "Отпетые Мошенники",        lang: "ru" },
+    { n: 10, title: "А не спеть ли мне песню",          artist: "Чайф",                     lang: "ru" },
+    { n: 11, title: "Видели ночь",                      artist: "Zdob și Zdub",             lang: "ru" },
+    { n: 12, title: "Перемен!",                         artist: "Кино",                     lang: "ru" },
+    { n: 13, title: "Это всё",                          artist: "ДДТ",                      lang: "ru" },
+    { n: 14, title: "Что такое осень",                  artist: "ДДТ",                      lang: "ru" },
+    { n: 15, title: "Лесник",                           artist: "Король и Шут",             lang: "ru" },
+    { n: 16, title: "Верхом на звезде",                 artist: "Найк Борзов",              lang: "ru" },
+    { n: 17, title: "Батарейка",                        artist: "Жуки",                     lang: "ru" },
+    { n: 18, title: "Любочка",                          artist: "Маша и Медведи",           lang: "ru" },
+    { n: 19, title: "7000 над землёй",                  artist: "Валерий Сюткин",           lang: "ru" },
+    { n: 20, title: "Невеста",                          artist: "Мумий Тролль",             lang: "ru" },
+    { n: 21, title: "Районы-кварталы",                  artist: "Звери",                    lang: "ru" },
+    { n: 22, title: "Ночь",                             artist: "Андрей Губин",             lang: "ru" },
+    { n: 23, title: "Небо",                             artist: "Дискотека Авария",         lang: "ru" },
+    { n: 24, title: "Танцы",                            artist: "The Hatters",              lang: "ru" },
+    { n: 25, title: "Текила-любовь",                    artist: "Натали",                   lang: "ru" },
+    { n: 26, title: "Остров",                           artist: "Леонид Агутин",            lang: "ru" },
+    { n: 27, title: "Ялта, парус на заре",              artist: "Валентин Стрыкало",        lang: "ru" },
+    { n: 28, title: "Евпатория",                        artist: "Ляпис Трубецкой",          lang: "ru" },
+    { n: 29, title: "На Титанике",                      artist: "Лолита Милявская",         lang: "ru" },
+    { n: 30, title: "Хали-Гали",                        artist: "Леприконсы",               lang: "ru" },
+    { n: 31, title: "Je veux",                          artist: "Zaz",                      lang: "fr" },
+    { n: 32, title: "Он тебя целует",                   artist: "Руки Вверх!",              lang: "ru" },
+    { n: 33, title: "Сиреневая Луна",                   artist: "Леонид Агутин",            lang: "ru" },
+    { n: 34, title: "Ау-ау-ау",                         artist: "Ляпис Трубецкой",          lang: "ru" },
+    { n: 35, title: "Bad Romance",                      artist: "Lady Gaga",                lang: "en" },
+    { n: 36, title: "Стыцамен",                         artist: "Иван Дорн",                lang: "ru" },
+    { n: 37, title: "Shape of You",                     artist: "Ed Sheeran",               lang: "en" },
+    { n: 38, title: "Между нами любовь",                artist: "Serebro",                  lang: "ru" },
+    { n: 39, title: "Знаешь ли ты",                     artist: "МакSим",                   lang: "ru" },
+    { n: 40, title: "Попытка №5",                       artist: "ВИА Гра",                  lang: "ru" },
+    { n: 41, title: "Невеста",                          artist: "Глюкоза",                  lang: "ru" },
+    { n: 42, title: "Салют, Вера!",                     artist: "Иванушки International",   lang: "ru" },
+    { n: 43, title: "Девушки как звёзды",               artist: "Андрей Губин",             lang: "ru" },
+    { n: 44, title: "Вахтёрам",                         artist: "Бумбокс",                  lang: "ru" },
+    { n: 45, title: "Конь",                             artist: "Любэ",                     lang: "ru" },
+    { n: 46, title: "Крошка моя",                       artist: "Руки Вверх!",              lang: "ru" },
+    { n: 47, title: "Тополиный пух",                    artist: "Иванушки International",   lang: "ru" },
+    { n: 48, title: "Выхода нет",                       artist: "Сплин",                    lang: "ru" },
+    { n: 49, title: "Don't Speak",                      artist: "No Doubt",                 lang: "en" },
+    { n: 50, title: "Je t'aime",                        artist: "Lara Fabian",              lang: "fr" },
+    { n: 51, title: "Солдат",                           artist: "5'nizza",                  lang: "ru" },
+    { n: 52, title: "Солнышко",                         artist: "Демо",                     lang: "ru" }
+  ];
+
+  function lyricsUrl(s) {
+    const suffix = s.lang === "en" ? "lyrics" : s.lang === "fr" ? "paroles" : "текст песни";
+    const q = `${s.artist} ${s.title} ${suffix}`;
+    return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  }
+
+  const list = document.getElementById("songs");
+  songs.forEach(s => {
+    const li = document.createElement("li");
+    li.dataset.search = (s.title + " " + s.artist).toLowerCase();
+    li.innerHTML = `
+      <a href="${lyricsUrl(s)}" target="_blank" rel="noopener noreferrer">
+        <span class="num">${String(s.n).padStart(2, "0")}</span>
+        <span class="meta">
+          <span class="title">${s.title}</span>
+          <span class="artist">${s.artist}</span>
+        </span>
+        <span class="arrow">↗</span>
+      </a>
+    `;
+    list.appendChild(li);
+  });
+
+  const filterEl = document.getElementById("filter");
+  const emptyEl = document.getElementById("empty");
+  filterEl.addEventListener("input", () => {
+    const q = filterEl.value.trim().toLowerCase();
+    let visible = 0;
+    list.querySelectorAll("li").forEach(li => {
+      const match = li.dataset.search.includes(q);
+      li.classList.toggle("hidden", !match);
+      if (match) visible++;
+    });
+    emptyEl.classList.toggle("show", visible === 0);
+  });
+</script>
+
+</body>
+</html>
