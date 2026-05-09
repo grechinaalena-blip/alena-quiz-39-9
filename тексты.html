@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Подпеваем — тексты песен</title>
 <style>
   :root {
@@ -18,7 +18,7 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   body {
     font-family: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
     color: var(--ink);
@@ -26,257 +26,3562 @@
       radial-gradient(1200px 800px at 80% -10%, rgba(255, 94, 126, 0.18), transparent 60%),
       radial-gradient(900px 700px at -10% 110%, rgba(255, 184, 77, 0.12), transparent 60%),
       linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
-    min-height: 100vh;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 
-  .container {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 40px 20px 100px;
+  /* Slides */
+  .slide {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fade .25s ease-out;
   }
+  .slide.active { display: flex; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-  /* Hero */
-  .hero { text-align: center; margin-bottom: 40px; }
+  /* TOC */
+  .toc-slide { padding: 24px; overflow-y: auto; }
+  .toc-slide .container { max-width: 760px; margin: 0 auto; padding-bottom: 60px; }
+  .hero { text-align: center; margin: 16px 0 32px; }
   .hero .kicker {
-    font-size: 12px;
-    letter-spacing: .3em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 16px;
+    font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px;
   }
   .hero h1 {
-    font-size: clamp(36px, 7vw, 64px);
-    margin: 0;
-    line-height: 1.05;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-size: clamp(34px, 6vw, 56px); margin: 0; line-height: 1.05;
+    font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .hero p {
-    margin: 16px 0 0;
-    font-size: clamp(14px, 1.6vw, 16px);
-    color: var(--muted);
-    max-width: 50ch;
-    margin-left: auto;
-    margin-right: auto;
-  }
+  .hero p { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
 
-  /* Filter input */
   .filter {
-    margin: 0 0 20px;
-    width: 100%;
-    padding: 14px 18px;
-    font: inherit;
-    font-size: 16px;
-    color: var(--ink);
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 14px;
-    outline: none;
-    transition: border-color .2s;
+    width: 100%; padding: 12px 16px; font: inherit; font-size: 15px;
+    color: var(--ink); background: var(--card);
+    border: 1px solid var(--card-border); border-radius: 12px;
+    outline: none; margin-bottom: 16px;
   }
   .filter::placeholder { color: var(--muted); }
   .filter:focus { border-color: var(--accent); }
 
-  /* Song list */
-  .songs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .songs li.hidden { display: none; }
-  .songs a {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--ink);
-    transition: background .15s, border-color .15s, transform .12s;
+  .toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .toc li.hidden { display: none; }
+  .toc a {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 10px; text-decoration: none; color: var(--ink);
+    transition: background .15s, border-color .15s;
   }
-  .songs a:hover, .songs a:focus-visible {
-    background: var(--card-hover);
-    border-color: var(--accent);
-    transform: translateY(-1px);
+  .toc a:hover, .toc a:focus-visible {
+    background: var(--card-hover); border-color: var(--accent);
   }
-  .songs .num {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(255, 184, 77, 0.12);
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 13px;
+  .toc .num {
+    flex-shrink: 0; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: rgba(255, 184, 77, 0.12);
+    color: var(--accent); font-weight: 700; font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
-  .songs .meta { flex: 1; min-width: 0; }
-  .songs .title {
-    font-size: clamp(15px, 1.6vw, 17px);
-    font-weight: 600;
-    line-height: 1.25;
-    margin-bottom: 2px;
-  }
-  .songs .artist {
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .songs .arrow {
-    flex-shrink: 0;
-    color: var(--muted);
-    font-size: 18px;
-    transition: color .15s, transform .15s;
-  }
-  .songs a:hover .arrow {
-    color: var(--accent);
-    transform: translateX(2px);
-  }
+  .toc .info { flex: 1; min-width: 0; }
+  .toc .t { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; }
+  .toc .a { display: block; font-size: 12px; color: var(--muted); }
+  .toc .arr { color: var(--muted); font-size: 16px; flex-shrink: 0; }
+  .toc a:hover .arr { color: var(--accent); }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px; display: none; font-style: italic; }
+  .empty.show { display: block; }
 
   .back-to-quiz {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(15, 10, 26, 0.85);
-    border: 1px solid var(--card-border);
-    backdrop-filter: blur(8px);
-    border-radius: 999px;
-    padding: 10px 18px;
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 13px;
-    z-index: 10;
-  }
-  .back-to-quiz:hover { color: var(--accent); }
-
-  .empty-state {
-    text-align: center;
+    display: inline-block;
+    margin-top: 20px;
     color: var(--muted);
-    padding: 32px;
-    display: none;
-    font-style: italic;
+    font-size: 13px;
+    text-decoration: none;
+    border-bottom: 1px dashed var(--muted);
   }
-  .empty-state.show { display: block; }
+  .back-to-quiz:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Song slide */
+  .song-slide { padding: 14px 16px; }
+  .sh { flex-shrink: 0; padding: 4px 8px 12px; border-bottom: 1px solid var(--card-border); }
+  .sh-row { display: flex; justify-content: space-between; align-items: center; }
+  .btn-back {
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    padding: 4px 8px; margin-left: -8px;
+  }
+  .btn-back:hover { color: var(--accent); }
+  .sh-num { font-size: 11px; color: var(--muted); letter-spacing: .15em; }
+  .sh h2 {
+    font-size: clamp(24px, 3.4vw, 36px); margin: 6px 0 2px;
+    line-height: 1.15; font-weight: 800; letter-spacing: -0.01em;
+  }
+  .sh-artist { font-size: 14px; color: var(--accent); margin-bottom: 4px; }
+
+  .lyrics-wrap { flex: 1; overflow: hidden; padding: 12px 0 8px; }
+  .lyrics {
+    margin: 0;
+    height: 100%;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: inherit;
+    color: var(--ink);
+    line-height: 1.55;
+    padding: 4px 16px 4px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lyrics.large  { font-size: clamp(18px, 2.4vw, 28px); line-height: 1.6; }
+  .lyrics.medium { font-size: clamp(16px, 2vw, 22px);   line-height: 1.55; }
+  .lyrics.two-col {
+    column-count: 2;
+    column-gap: 36px;
+    column-fill: balance;
+    font-size: clamp(15px, 1.8vw, 20px);
+    line-height: 1.5;
+  }
+  .lyrics.two-col.dense {
+    font-size: clamp(13px, 1.5vw, 17px);
+    line-height: 1.45;
+    column-gap: 28px;
+  }
+  @media (max-width: 600px) {
+    .lyrics.two-col, .lyrics.two-col.dense { column-count: 1; font-size: clamp(15px, 4vw, 18px); }
+  }
+
+  .song-nav {
+    flex-shrink: 0; display: flex; gap: 10px; padding-top: 10px;
+    border-top: 1px solid var(--card-border);
+  }
+  .nav {
+    flex: 1; padding: 12px; font: inherit; font-size: 14px;
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 10px; color: var(--ink); cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .nav:hover { background: var(--card-hover); border-color: var(--accent); color: var(--accent); }
+  .nav:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
-<div class="container">
 
-  <div class="hero">
-    <div class="kicker">39.9 пока · подпеваем</div>
-    <h1>Тексты песен</h1>
-    <p>Жми на песню — откроется поиск с текстом в новой вкладке. Поём вместе с группой!</p>
+<!-- TOC slide -->
+<section class="slide toc-slide active" id="toc-slide">
+  <div class="container">
+    <div class="hero">
+      <div class="kicker">39.9 пока · подпеваем</div>
+      <h1>Тексты песен</h1>
+      <p>Открой нужную песню — текст займёт весь экран</p>
+    </div>
+    <input type="text" class="filter" id="filter" placeholder="🔍 Найти песню или артиста" autocomplete="off" />
+    <ul class="toc" id="toc">
+      <li><a href="#" data-go="1"><span class="num">1</span><span class="info"><span class="t">Нас не догонят</span><span class="a">t.A.T.u.</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="2"><span class="num">2</span><span class="info"><span class="t">Кукушка</span><span class="a">Полина Гагарина</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="3"><span class="num">3</span><span class="info"><span class="t">Напитки покрепче</span><span class="a">Звери</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="4"><span class="num">4</span><span class="info"><span class="t">Южная ночь</span><span class="a">Звери</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="5"><span class="num">5</span><span class="info"><span class="t">Ариведерчи</span><span class="a">Земфира</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="6"><span class="num">6</span><span class="info"><span class="t">Искала</span><span class="a">Земфира</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="7"><span class="num">7</span><span class="info"><span class="t">Ракеты</span><span class="a">Земфира</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="8"><span class="num">8</span><span class="info"><span class="t">Мой рок-н-ролл</span><span class="a">Би-2</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="9"><span class="num">9</span><span class="info"><span class="t">Люби меня, люби</span><span class="a">Отпетые Мошенники</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="10"><span class="num">10</span><span class="info"><span class="t">А не спеть ли мне песню</span><span class="a">Чиж &amp; Co.</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="11"><span class="num">11</span><span class="info"><span class="t">Видели ночь</span><span class="a">Zdob și Zdub</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="12"><span class="num">12</span><span class="info"><span class="t">Перемен!</span><span class="a">Кино</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="13"><span class="num">13</span><span class="info"><span class="t">Это всё</span><span class="a">ДДТ</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="14"><span class="num">14</span><span class="info"><span class="t">Что такое осень</span><span class="a">ДДТ</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="15"><span class="num">15</span><span class="info"><span class="t">Лесник</span><span class="a">Король и Шут</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="16"><span class="num">16</span><span class="info"><span class="t">Верхом на звезде</span><span class="a">Найк Борзов</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="17"><span class="num">17</span><span class="info"><span class="t">Батарейка</span><span class="a">Жуки</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="18"><span class="num">18</span><span class="info"><span class="t">Любочка</span><span class="a">Маша и Медведи</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="19"><span class="num">19</span><span class="info"><span class="t">7000 над землёй</span><span class="a">Валерий Сюткин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="20"><span class="num">20</span><span class="info"><span class="t">Невеста</span><span class="a">Мумий Тролль</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="21"><span class="num">21</span><span class="info"><span class="t">Районы-кварталы</span><span class="a">Звери</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="22"><span class="num">22</span><span class="info"><span class="t">Ночь</span><span class="a">Андрей Губин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="23"><span class="num">23</span><span class="info"><span class="t">Небо</span><span class="a">Дискотека Авария</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="24"><span class="num">24</span><span class="info"><span class="t">Танцы</span><span class="a">The Hatters</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="25"><span class="num">25</span><span class="info"><span class="t">Текила-любовь</span><span class="a">Валерий Меладзе</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="26"><span class="num">26</span><span class="info"><span class="t">Остров</span><span class="a">Леонид Агутин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="27"><span class="num">27</span><span class="info"><span class="t">Наше лето</span><span class="a">Валентин Стрыкало</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="28"><span class="num">28</span><span class="info"><span class="t">Евпатория</span><span class="a">Ляпис Трубецкой</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="29"><span class="num">29</span><span class="info"><span class="t">На Титанике</span><span class="a">Лолита Милявская</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="30"><span class="num">30</span><span class="info"><span class="t">Хали-Гали</span><span class="a">Леприконсы</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="31"><span class="num">31</span><span class="info"><span class="t">Je veux</span><span class="a">Zaz</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="32"><span class="num">32</span><span class="info"><span class="t">Он тебя целует</span><span class="a">Руки Вверх!</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="33"><span class="num">33</span><span class="info"><span class="t">Сиреневая Луна</span><span class="a">Леонид Агутин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="34"><span class="num">34</span><span class="info"><span class="t">Ау-ау-ау</span><span class="a">Ляпис Трубецкой</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="35"><span class="num">35</span><span class="info"><span class="t">Bad Romance</span><span class="a">Lady Gaga</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="36"><span class="num">36</span><span class="info"><span class="t">Стыцамен</span><span class="a">Иван Дорн</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="37"><span class="num">37</span><span class="info"><span class="t">Shape of You</span><span class="a">Ed Sheeran</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="38"><span class="num">38</span><span class="info"><span class="t">Между нами любовь</span><span class="a">Serebro</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="39"><span class="num">39</span><span class="info"><span class="t">Знаешь ли ты</span><span class="a">МакSим</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="40"><span class="num">40</span><span class="info"><span class="t">Попытка №5</span><span class="a">ВИА Гра</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="41"><span class="num">41</span><span class="info"><span class="t">Невеста</span><span class="a">Глюкоза</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="42"><span class="num">42</span><span class="info"><span class="t">Салют, Вера!</span><span class="a">Валерий Меладзе</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="43"><span class="num">43</span><span class="info"><span class="t">Девушки как звёзды</span><span class="a">Андрей Губин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="44"><span class="num">44</span><span class="info"><span class="t">Вахтёрам</span><span class="a">Бумбокс</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="45"><span class="num">45</span><span class="info"><span class="t">Конь</span><span class="a">Любэ</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="46"><span class="num">46</span><span class="info"><span class="t">Крошка моя</span><span class="a">Руки Вверх!</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="47"><span class="num">47</span><span class="info"><span class="t">Тополиный пух</span><span class="a">Иванушки International</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="48"><span class="num">48</span><span class="info"><span class="t">Выхода нет</span><span class="a">Сплин</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="49"><span class="num">49</span><span class="info"><span class="t">Don&#x27;t Speak</span><span class="a">No Doubt</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="50"><span class="num">50</span><span class="info"><span class="t">Je t&#x27;aime</span><span class="a">Lara Fabian</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="51"><span class="num">51</span><span class="info"><span class="t">Солдат</span><span class="a">5&#x27;nizza</span></span><span class="arr">→</span></a></li>
+      <li><a href="#" data-go="52"><span class="num">52</span><span class="info"><span class="t">Солнышко</span><span class="a">Демо</span></span><span class="arr">→</span></a></li>
+    </ul>
+    <div class="empty" id="empty">Ничего не найдено</div>
+    <a class="back-to-quiz" href="quiz.html">← К квизу</a>
   </div>
+</section>
 
-  <input type="text" class="filter" id="filter" placeholder="🔍 Найти песню или артиста" autocomplete="off" />
+  <section class="slide song-slide" id="song-1">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">1 / 52</span>
+      </div>
+      <h2>Нас не догонят</h2>
+      <div class="sh-artist">t.A.T.u.</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят!
+Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят!
+Нас не догонят!
+Только скажи - дальше нас двое.
+Только огни аэродрома.
+Мы убежим - нас не догонят.
+Дальше от них, дальше от дома
+Ночь-проводник, спрячь наши тени за облака,
+За облаками - нас не найдут, нас не изменят.
+Им не достать звезды руками!
+Небо уронит ночь на ладони!
+Нас не догонят! Нас не догонят!
+Небо уронит ночь на ладони!
+Нас не догонят! Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят!
+Нас не догонят.
+Нас не догонят!
+Нас не догонят!
+Нас не догонят! Нас не догонят!
+Мы убежим - все будет просто.
+Ночь упадет, небо уронит.
+И пустота на перекрестках,
+И пустота, - нас не догонит.
+Не говори, им непонятно
+Только без них, только не мимо
+Лучше не так, но не обратно
+Только не с ними! Только не с ними!
+Только не с ними...
+Нас не догонят.
+Нас не догонят.
+Нас не догонят.
+Нас не догонят! Нас не догонят!
+Небо уронит ночь на ладони!
+Нас не догонят! Нас не догонят!
+Небо уронит ночь на ладони!
+Нас не догонят! Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят! Нас не догонят!
+Нас не догонят!
+Нас не догонят!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-2">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">2 / 52</span>
+      </div>
+      <h2>Кукушка</h2>
+      <div class="sh-artist">Полина Гагарина</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Песен еще не написанных сколько?
+Скажи, кукушка, пропой!
+В городе мне жить или на выселках?
+Камнем лежать или гореть звездой, звездой?..
 
-  <ul class="songs" id="songs">
-    <!-- Songs will be rendered by JS from list below -->
-  </ul>
+Солнце мое, взгляни на меня!
+Моя ладонь превратилась в кулак.
+И если есть порох — дай огня! Вот так...
 
-  <div class="empty-state" id="empty">Ничего не найдено :(</div>
+Кто пойдет по следу одинокому?
+Сильные да смелые
+Головы сложили в поле, в бою...
+Мало кто остался в светлой памяти,
+В трезвом уме да с твердой рукой
+В строю, в строю.
 
-</div>
+Солнце мое, взгляни на меня!
+Моя ладонь превратилась в кулак.
+И если есть порох — дай огня! Вот так...
 
-<a class="back-to-quiz" href="quiz.html">← К квизу</a>
+Где же ты теперь, воля вольная,
+С кем же ты сейчас ласковый рассвет
+Встречаешь? Ответь!
+Хорошо с тобой, да плохо без тебя:
+Головы да плечи терпеливые
+Под плеть, под плеть...
+
+Ты солнце мое, взгляни на меня!
+Моя ладонь превратилась в кулак.
+И если есть порох — дай огня! Вот так...
+
+Солнце мое, взгляни на меня!
+Моя ладонь превратилась в кулак.
+И если есть порох — дай огня! Вот так...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-3">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">3 / 52</span>
+      </div>
+      <h2>Напитки покрепче</h2>
+      <div class="sh-artist">Звери</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">И нигде и ни во сколько
+Повстречались и забыли
+И нигде и ни во сколько
+Повстречались и забыли
+Брызги, капельки, осколки
+Никого не зацепили.
+Брызги, капельки — на ветер
+И тебя никто не тронет
+Дядя Стёпа на конфете
+Помещается в ладони
+Напитки покрепче
+Слова покороче
+Так проще, так легче
+Стираются ночи
+Звонки без ответа
+Слова и улыбки
+Вчерашнее лето
+Смешная ошибка
+А давай как будто праздник
+В небо шарики салюты
+Синий, белый, жёлтый, красный
+Брызги, капельки, минуты
+Падаю на ровном месте
+Зацепиться бы за воздух
+Там, где нолик, ставил крестик
+Там, где рано, ставил поздно
+Напитки покрепче
+Слова покороче
+Так проще, так легче
+Стираются ночи
+Звонки без ответа
+Слова и улыбки
+Вчерашнее лето
+Смешная ошибка
+Брызги, капельки, минуты
+Становился чемпионом
+Выбирал себе маршруты
+Выбирал себе перроны
+И нигде и ни во сколько
+Что бы не было вопросов
+Брызги, капельки, осколки,
+Холостые папиросы
+Напитки покрепче
+Слова покороче
+Так проще, так легче
+Стираются ночи
+Звонки без ответа
+Слова и улыбки
+Вчерашнее лето
+Смешная ошибка</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-4">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">4 / 52</span>
+      </div>
+      <h2>Южная ночь</h2>
+      <div class="sh-artist">Звери</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Запалили секреты,
+Зажигали танцоры.
+Прикололи на лето
+Светофоры, танцполы.
+Светомузыка ярко,
+Девочки-открывашки,
+Поцелуи, подарки
+На красивых рубашках
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по парам.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по пара-рам.
+Хочешь, не перехочешь.
+Понимаешь как будто.
+Беспонтовые ночи,
+Синеглазое утро
+Удивляли друг друга,
+Забавляли глазами.
+Рассказали подруги,
+Рассекретились сами.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по парам.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по пара-рам.
+Закрутили пластинки,
+Заиграли — запели.
+Вечера. вечеринки,
+Заболтали коктейли
+Светомузыка ярко,
+Девочки-открывашки,
+Поцелуи, подарки
+На красивых рубашках
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по парам.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Девочки, мальчики, танцуем.
+Раз, два, три, по пара-рам.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-5">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">5 / 52</span>
+      </div>
+      <h2>Ариведерчи</h2>
+      <div class="sh-artist">Земфира</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Вороны-москвички меня разбудили.
+Промокшие спички надежду убили
+Курить – значит, буду дольше жить
+Значит, будем
+Корабли в моей гавани жечь,
+На рубли поменяю билет.
+Отрастить бы до самых бы плеч,
+Я никогда не вернусь домой.
+С тобой мне так интересно,
+А с ними не очень.
+Я вижу, что тесно, я помню, что прочно
+Дарю время.
+Видишь – я горю.
+Кто-то спутал и поджег меня.
+Аривидерчи. Не учили в глазок посмотреть,
+И едва ли успеют по плечи,
+Я разобью турникет и побегу по своим.
+Обратный change на билет.
+Я буду ждать, ты звони
+В мои обычные шесть.
+Я стала старше на жизнь,
+Наверно, нужно учесть
+Корабли в моей гавани,
+Не взлетим, так поплаваем
+Стрелки ровно на два часа назад
+В моей гавани
+Не взлетим, так поплаваем
+Стрелки ровно на два часа назад
+Корабли в моей гавани,
+Не взлетим, так поплаваем
+Стрелки ровно на два часа назад
+В моей гавани
+Не взлетим, так поплаваем
+Стрелки ровно на два часа назад</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-6">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">6 / 52</span>
+      </div>
+      <h2>Искала</h2>
+      <div class="sh-artist">Земфира</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Я искала тебя
+Годами долгими,
+Искала тебя
+Дворами темными,
+В журналах, в кино, среди друзей,
+И в день, когда нашла,
+С ума сошла.
+
+Ты совсем как во сне,
+Совсем как в альбомах,
+Где я рисовала тебя гуашью.
+
+Дальше были звонки,
+Ночные больше,
+Слезы, нервы, любовь
+И стрелки в Польше,
+Дети, но не мои
+И старые зазнобы,
+Куришь каждые пять,
+Мы устали оба.
+
+Ты совсем как во сне,
+Совсем как в альбомах,
+Где я рисовала тебя гуашью.
+
+Годами долгими,
+Ночами темными,
+Годами долгими.
+
+Ты совсем как во сне,
+Совсем как в альбомах,
+Где я рисовала тебя гуашью.
+
+Ты совсем как во сне,
+Совсем как в альбомах,
+Где я рисовала тебя гуашью.
+
+Я искала тебя
+Годами долгими,
+Искала тебя
+Дворами темными,
+В журналах, в кино,
+Годами долгими,
+Искала тебя,
+Ночами-чами-чами...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-7">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">7 / 52</span>
+      </div>
+      <h2>Ракеты</h2>
+      <div class="sh-artist">Земфира</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">И будто бы я
+На расплавленном солнцем острове,
+Забытая теликом,
+Я голый, глухой и апостол я.
+И капельки пота,
+И люди-моллюски,
+Латинские ноты
+И ломаный русский.
+
+Узоры и голова в бинтах,
+Стилеты засели глубоко,
+Миноры и я как на винтах.
+Ракеты, ракеты, ракеты
+Летают далеко,
+Далеко, далеко, далеко.
+
+И будто бы я
+Расстреляла последние косточки,
+И пахнет сентябрь,
+И дождик в открытые форточки.
+И капельки пота,
+И люди-моллюски,
+Латинские ноты
+И ломаный русский.
+
+Узоры и голова в бинтах,
+Стилеты засели глубоко,
+Миноры и я как на винтах.
+Ракеты, ракеты, ракеты
+Летают далеко,
+Далеко, далеко, далеко.
+
+Узоры и голова в бинтах,
+Стилеты засели глубоко,
+Миноры и я как на винтах.
+Ракеты, ракеты, ракеты
+Летают...
+
+Узоры и голова в бинтах,
+Стилеты засели глубоко,
+Миноры и я как на винтах.
+Ракеты, ракеты, ракеты
+Летают далеко,
+Далеко, далеко, далеко.
+Далеко, далеко, далеко, далеко.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-8">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">8 / 52</span>
+      </div>
+      <h2>Мой рок-н-ролл</h2>
+      <div class="sh-artist">Би-2</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">И то, что было набело, откроется потом,
+Мой рок-н-ролл - это не цель и даже не средство.
+Не новое, а заново,
+Один и об одном,
+Дорога - мой дом,
+И для любви это не место.
+Прольются все слова, как дождь,
+И там, где ты меня не ждешь,
+Ночные ветры принесут тебе прохладу.
+На наших лицах без ответа
+Лишь только отблески рассвета
+Того, где ты меня не ждешь.
+А дальше - это главное, похожий на тебя
+В долгом пути я заплету волосы лентой.
+И не способный на покой,
+Я знак подам тебе рукой,
+Прощаясь с тобой,
+Как будто с легендой.
+Прольются все слова, как дождь,
+И там, где ты меня не ждешь,
+Ночные ветры принесут тебе прохладу.
+На наших лицах без ответа
+Лишь только отблески рассвета
+Того, где ты меня не ждешь.
+И то, что было набело, откроется потом,
+Мой рок-н-ролл - это не цель и даже не средство.
+Не новое, а заново,
+Один и об одном,
+Дорога - мой дом,
+И для любви это не место.
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...
+Дорога - мой дом,
+И для любви это не место...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-9">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">9 / 52</span>
+      </div>
+      <h2>Люби меня, люби</h2>
+      <div class="sh-artist">Отпетые Мошенники</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Скоро весна, скоро весна,
+Скоро эти ночи беспокойного сна,
+Снова весна, снова любовь,
+Снова в наших жилах заиграет кровь.
+Снова рассвет, снова рассвет
+И назад уже дороги нет,
+Скоро печаль, скоро печаль,
+Всё уйдёт и нам немного жаль.
+
+Знаю ответ, знаю ответ
+На вопрос: «Ты есть или нет?»
+Знаю обман, знаю обман,
+Знаю нашей любви океан.
+Ты не одна, ты не одна
+Будешь этой ночью без сна.
+Скоро любовь, скоро весна, ага.
+
+Люби меня, люби —
+Жарким огнём, ночью и днём,
+Сердце сжигая.
+Люби меня, люби,
+Не улетай, не исчезай —
+Я умоляю.
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби.
+
+Скоро тепло, скоро тепло,
+Скоро много нам воды натекло.
+Скоро тепло, скоро экстаз
+И эта музыка доходит до нас.
+Делаю шаг, делаю два,
+Закружилась от любви голова,
+Знаю теперь, знаю теперь,
+Как открыть эту тайную дверь.
+
+Время идёт, время идёт,
+Нам его уже никто не вернёт,
+Время летит, время летит,
+Двигаясь с нами, танцуя в пути.
+Снова вопрос, снова ответ,
+Снова загорит невидимый свет.
+С нами любовь, с нами игра, ага.
+
+Люби меня, люби —
+Жарким огнём, ночью и днём,
+Сердце сжигая.
+Люби меня, люби,
+Не улетай, не исчезай —
+Я умоляю.
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби.
+
+Люби меня, люби —
+Жарким огнём, ночью и днём,
+Сердце сжигая.
+Люби меня, люби,
+Не улетай, не исчезай —
+Я умоляю.
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби,
+Люби меня, люби.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-10">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">10 / 52</span>
+      </div>
+      <h2>А не спеть ли мне песню</h2>
+      <div class="sh-artist">Чиж &amp; Co.</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics medium">А не спеть ли мне песню о любви?!
+А не выдумать ли новый жанр?!
+Попопсовей мотив и стихи,
+И всю жизнь получать гонорар.
+
+Мою песню услышат тысячи глаз,
+Моё фото раскупят сотни рук,
+Моё солнце мне скажет: «Это про нас!»
+Посмеётся над текстом лучший друг.
+
+И я стану сверхновой суперзвездой,
+Много денег, машина — все дела.
+Улыбнувшись, ты скажешь: «Как Крутой!»
+Я тебя обниму: «Ты права!»
+
+— Как Крутой!
+— Ты права!
+— Как Крутой!
+Я тебя обниму…
+
+Напишу-ка я песню о любви,
+Только что-то струна порвалась,
+Да сломалось перо, ты прости.
+Может, в следующий раз…
+А теперь пора спать…</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-11">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">11 / 52</span>
+      </div>
+      <h2>Видели ночь</h2>
+      <div class="sh-artist">Zdob și Zdub</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Мы вышли из дома,
+Когда во всех окнах
+Погасли огни,
+Один за одним,
+Мы видели, как уезжает
+Последний трамвай.
+
+Ездят такси,
+Но нам нечем платить,
+И нам незачем ехать,
+Мы гуляем одни,
+На нашем кассетнике
+Кончилась пленка, смотай.
+
+Видели ночь,
+Гуляли всю ночь до утра.
+
+Зайди в телефонную будку,
+Скажи, чтоб закрыли дверь
+В квартире твоей,
+Сними свою обувь —
+Мы будем ходить босиком.
+
+Есть сигареты, спички,
+Бутылка вина, и она
+Поможет нам ждать,
+Поможет поверить,
+Что все спят,
+И мы здесь вдвоем.
+
+Видели ночь,
+Гуляли всю ночь
+До утра…</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-12">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">12 / 52</span>
+      </div>
+      <h2>Перемен!</h2>
+      <div class="sh-artist">Кино</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Вместо тепла зелень стекла
+Вместо огня дым
+Из сетки календаpя выхвачен день
+Кpасное солнце сгоpает дотла
+День догоpает с ним
+Hа пылающий гоpод падает тень
+Пеpемен тpебyют наши сеpдца
+Пеpемен тpебyют наши глаза
+В нашем смехе, и в наших слезах, и в пyльсации вен
+Пеpемен, мы ждём пеpемен
+Электpический свет пpодолжает наш день
+И коpобка от спичек пyста
+Hо на кyхне синим цветком гоpит газ
+Сигаpеты в pyках, чай на столе
+Эта схема пpоста
+И больше нет ничего — всё находится в нас
+Пеpемен тpебyют наши сеpдца
+Пеpемен тpебyют наши глаза
+В нашем смехе, и в наших слезах, и в пyльсации вен
+Пеpемен, мы ждём пеpемен
+Мы не можем похвастаться мyдpостью глаз
+И yмелыми жестами pyк
+Hам не нyжно всё это, чтобы дpyг дpyга понять
+Сигаpеты в pyках, чай на столе
+Так замыкается кpyг
+И вдpyг нам становится стpашно что-то менять
+Пеpемен тpебyют наши сеpдца
+Пеpемен тpебyют наши глаза
+В нашем смехе, и в наших слезах, и в пyльсации вен
+Пеpемен, мы ждём пеpемен
+Пеpемен тpебyют наши сеpдца
+Пеpемен тpебyют наши глаза
+В нашем смехе, и в наших слезах, и в пyльсации вен
+Пеpемен, мы ждём пеpемен</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-13">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">13 / 52</span>
+      </div>
+      <h2>Это всё</h2>
+      <div class="sh-artist">ДДТ</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Побледневшие листья
+Окна зарастают прозрачной водой.
+У воды нет ни смерти, ни дна —
+Я прощаюсь с тобой.
+Горсть тепла после долгой зимы
+Донесём пять минут до утра.
+Доживём... наше море вины
+Поглощает... время-дыра.
+
+Это всё, что останется
+После меня.
+Это всё, что возьму я с собой.
+
+С нами память сидит у стола,
+А в руке её — пламя свечи.
+Ты такой хорошей была,
+Посмотри на меня, не молчи.
+Крики чайки на белой стене,
+Окольцованы черной луной,
+Нарисуй что-нибудь на окне
+И шепни на прощание рекой.
+
+Это всё, что останется
+После меня.
+Это всё, что возьму я с собой.
+
+Это всё, что останется
+После меня.
+Это всё, что возьму я с собой.
+
+Две мечты да печали стакан
+Мы, воскреснув, допили до дна.
+Я не знаю, зачем тебе дан —
+Правит мною дорога-луна.
+Ты не плачь, если можешь, прости,
+Жизнь не сахар, а смерть нам не чай.
+Мне свою дорогу нести,
+До свидания, друг, и прощай.
+
+Это всё, что останется
+После меня.
+Это всё, что возьму я с собой.
+
+Это всё, что останется
+После меня.
+Это всё, что возьму я с собой.
+
+Оу-о-о-о...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-14">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">14 / 52</span>
+      </div>
+      <h2>Что такое осень</h2>
+      <div class="sh-artist">ДДТ</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Что такое осень – это небо,
+Плачущее небо под ногами,
+В лужах разлетаются птицы с облаками,
+Осень, я давно с тобою не был.
+В лужах разлетаются птицы с облаками,
+Осень, я давно с тобою не был.
+Осень, в небе жгут корабли,
+Осень, мне бы прочь от земли.
+Там, где в море тонет печаль,
+Осень тёмная даль.
+Что такое осень – это камни,
+Верность над чернеющей Невою,
+Осень вновь напомнила
+Душе о самом главном,
+Осень, я опять лишён покоя.
+Осень вновь напомнила
+Душе о самом главном,
+Осень, я опять лишён покоя.
+Осень, в небе жгут корабли,
+Осень, мне бы прочь от земли.
+Там, где в море тонет печаль,
+Осень, тёмная даль.
+Что такое осень – это ветер
+Вновь играет рваными цепями,
+Осень, доползём ли, долетим ли до ответа,
+Что же будет с Родиной и с нами.
+Осень, доползём ли, долетим ли до рассвета,
+Осень, что же будет завтра с нами.
+Осень, в небе жгут корабли,
+Осень, мне бы прочь от земли.
+Там, где в море тонет печаль,
+Осень, тёмная даль.
+Осень, в небе жгут корабли,
+Осень, мне бы прочь от земли.
+Там, где в море тонет печаль,
+Осень, тёмная даль.
+Тает стаей город во мгле,
+Осень, что я знал о тебе.
+Сколько будет рваться листва,
+Осень вечно права.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-15">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">15 / 52</span>
+      </div>
+      <h2>Лесник</h2>
+      <div class="sh-artist">Король и Шут</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Замученный дорогой
+Я выбился из сил
+И в доме лесника я
+Ночлега попросил
+С улыбкой добродушной
+Старик меня пустил
+И жестом дружелюбным
+На ужин пригласил
+(Хэй!)
+Будь как дома, путник
+Я ни в чём не откажу
+Я ни в чём не откажу
+Я ни в чём не откажу! (Хэй!)
+Множество историй
+Коль желаешь - расскажу
+Коль желаешь - расскажу
+Коль желаешь - расскажу!
+На улице темнело
+Сидел я за столом
+Лесник сидел напротив
+Болтал о том, о сём
+Что нет среди животных
+У старика врагов
+Что нравится ему
+Подкармливать волков
+Будь как дома, путник
+Я ни в чём не откажу
+Я ни в чём не откажу
+Я ни в чём не откажу! (Хэй!)
+Множество историй
+Коль желаешь - расскажу
+Коль желаешь - расскажу
+Коль желаешь - расскажу!
+И волки среди ночи
+Завыли под окном
+Старик заулыбался
+И вдруг покинул дом
+Но вскоре возвратился
+С ружьём наперевес
+«Друзья хотят покушать
+Пойдём, приятель, в лес!»
+Будь как дома, путник
+Я ни в чём не откажу
+Я ни в чём не откажу
+Я ни в чём не откажу! (Хэй!)
+Множество историй
+Коль желаешь - расскажу
+Коль желаешь - расскажу
+Коль желаешь - расскажу!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-16">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">16 / 52</span>
+      </div>
+      <h2>Верхом на звезде</h2>
+      <div class="sh-artist">Найк Борзов</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Верхом на звезде,
+Вцепившись в лучи,
+С луной на поводке, в ночи.
+Верхом на звезде
+Несусь навстречу ветрам,
+К несбывшейся мечте и снам.
+
+О, жизнь, ты прекрасна,
+О, жизнь, ты прекрасна вполне.
+Бываешь немного опасна. О-е.
+Возьми мое сердце,
+Храни, вспоминай обо мне,
+Поверь мне, что все не напрасно.
+
+Верхом на звезде,
+Над лесом, рекой,
+Потерян навсегда покой.
+Верхом на звезде,
+Mi torno diabolo esta.
+Билет в один конец — весна.
+
+О, жизнь, ты прекрасна,
+О, жизнь, ты прекрасна вполне.
+Бываешь немного опасна. О-е.
+Возьми мое сердце,
+Храни, вспоминай обо мне,
+Поверь мне, что все не напрасно.
+
+Верхом на звезде
+Несусь навстречу ветрам
+И создал этот мир я сам.
+
+О, жизнь, ты прекрасна,
+О, жизнь, ты прекрасна вполне.
+Бываешь немного опасна. О-е.
+Возьми мое сердце,
+Храни, вспоминай обо мне,
+Поверь мне, что все не напрасно.
+
+Верь мне.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-17">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">17 / 52</span>
+      </div>
+      <h2>Батарейка</h2>
+      <div class="sh-artist">Жуки</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Холодный ветер с дождём усилился стократно
+Всё говорит об одном, что нет пути обратно
+Что ты не мой лопушок, а я не твой Андрейка
+Что у любви у нашей села батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+Я тосковал по тебе в минуты расставанья
+Ты возвращалась ко мне сквозь сны и расстоянья
+Но несмотря ни на что пришла судьба-злодейка
+И у любви у нашей села батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+И вроде всё как всегда: всё те же чашки, ложки
+Всё та же в кране вода, всё тот же стул без ножки
+И всё о том же с утра щебечет канарейка
+Лишь у любви у нашей села батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка
+О-оу-и-я-и-ё
+Батарейка</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-18">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">18 / 52</span>
+      </div>
+      <h2>Любочка</h2>
+      <div class="sh-artist">Маша и Медведи</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Синенькая юбочка,
+Ленточка в косе-е.
+Кто не знает Любочку?
+Любу знают все-е.
+Девочки на празднике
+Соберутся в круг.
+Ах, как танцует Любочка!
+
+Liebe, liebe, amore, amore,
+Либо-либо, любовь.
+
+Кружится и юбочка,
+И ленточка в косе-е.
+Все глядят на Любочку,
+Радуются все-е.
+Но если к этой Любочке
+Вы придёте в до-ом —
+Там вы эту девочку...
+
+Liebe, liebe, amore, amore,
+Либо-либо, любо-о-овь.
+Liebe, liebe, amore, amore,
+Либо-либо, любовь.
+
+Синенькая юбочка,
+Ленточка в косе-е.
+Кто не знает Любочку?
+Любу знают все-е.
+Случается, что девочки
+Бывают очень грубыми,
+Но необязательно...
+
+Liebe, liebe, amore, amore,
+Либо-либо, любо-о-овь.
+Liebe, liebe, amore, amore,
+Либо-либо, любо-о-овь.
+Liebe, liebe, amore, amore,
+Либо-либо, любовь.
+Liebe, liebe, amore, amore,
+Liebe, liebe, amore, amore,
+Liebe, liebe...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-19">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">19 / 52</span>
+      </div>
+      <h2>7000 над землёй</h2>
+      <div class="sh-artist">Валерий Сюткин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Поздний час, половина первого,
+Семь тысяч над землей,
+Гул турбин обрывки сна.
+За окном, облаками белыми
+Лежит пейзаж ночной,
+А над ним летит луна.
+Тайное движенье
+В небе без конца,
+Вижу отраженье
+Твоего лица…
+ПРИПЕВ:
+Ты далеко от меня,
+За пеленой другого дня,
+Но даже время мне
+Не сможет помешать
+Перелететь океан
+И, разогнав крылом туман,
+Упав с ночных небес,
+Скорей тебя обнять.
+За окном небо все темнее,
+Спит автопилот,
+Там внизу, наверно, дождь.
+Ночь длинна, но еще длиннее путь,
+Как долог мой полет
+В те места, где ты живешь.
+Тайное движенье
+В небе без конца,
+Вижу отраженье
+Твоего лица…
+ПРИПЕВ</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-20">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">20 / 52</span>
+      </div>
+      <h2>Невеста</h2>
+      <div class="sh-artist">Мумий Тролль</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Ба-бац! Открываешь глаза.
+Клац! Зубы выдерживают.
+Щетки, пасты, духи и бусы
+Больше, чем спасают.
+Здорово! Великолепно.
+Бьешься за жизнь, за завтра
+И даже иногда за меня.
+
+Как бы тебе повезло
+Моей невесте.
+Завтра мы идем тратить все свои,
+Все твои деньги вместе.
+
+Ям-ям! Йогуртом по губам.
+Ав! Воздух с завтрака плавит.
+Будильник сработает в пять.
+Исчезаю,
+Был не лучший день гладить тебя.
+Не с первого раза
+Открываются тайны,
+А с тысячного рубля.
+
+Как бы тебе повезло
+Моей невесте.
+Завтра мы идем тратить все свои,
+Все твои деньги вместе.
+
+Как бы тебе повезло
+Моей невесте.
+Завтра мы идем тратить все свои,
+Все твои деньги вместе.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-21">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">21 / 52</span>
+      </div>
+      <h2>Районы-кварталы</h2>
+      <div class="sh-artist">Звери</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Больше нечего ловить — всё, что надо я поймал,
+Надо сразу уходить, чтоб никто не привыкал.
+Ярко-жёлтые очки, два сердечка на брелке,
+Развесёлые зрачки, твоё имя на руке.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+У тебя всё будет класс, будут ближе облака,
+Я хочу как в первый раз и поэтому пока.
+Ярко-жёлтые очки, два сердечка на брелке,
+Развесёлые зрачки, я шагаю налегке.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Вот и всё никто не ждёт и никто не в дураках,
+Кто-то любит, кто-то врёт и летает в облаках.
+Ярко-жёлтые очки, два сердечка на брелке,
+Развеселые зрачки, я шагаю налегке.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Районы, кварталы, жилые массивы,
+Я ухожу, ухожу красиво.
+Я ухожу, ухожу красиво.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-22">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">22 / 52</span>
+      </div>
+      <h2>Ночь</h2>
+      <div class="sh-artist">Андрей Губин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Нет, я не буду говорить, что я всё готов простить
+И обид не помню я.
+Но, ты же знаешь всё равно, что в душе моей темно,
+Если рядом нет тебя.
+Ночь, ожиданья холод, боль, словно я расколот…
+Я ничего не вижу, сам себя я ненавижу.
+Вновь слезы ниоткуда, в кровь я кусаю губы,
+Всё, что мне сегодня надо, — просто быть с тобою рядом.
+Ночь, что за странная свобода: от заката до восхода
+Ждать тебя, надеясь вновь. О-о-о.
+День, я прошу тебя — не надо от восхода до заката
+Говорить мне про любовь. О-о-о.
+Нет, я не буду говорить, что хочу тебя забыть
+И не вспомнить никогда.
+Но ты должна меня понять — просто я устану ждать
+И, быть может, навсегда…
+Пусть ты меня не слышишь, пусть голос твой всё тише,
+Я буду верить в чудо — просто так, из ниоткуда.
+Нет, не хочу я много, всё, что прошу у Бога,
+Мне так мало в жизни надо — с нею быть сегодня рядом.
+Ночь, что за странная свобода: от заката до восхода
+Ждать тебя, надеясь вновь. О-о-о.
+День, я прошу тебя — не надо от восхода до заката
+Говорить мне про любовь. О-о-о.
+Ночь, ожиданья холод, боль, словно я расколот…
+Я ничего не вижу, сам себя я ненавижу.
+Вновь слёзы ниоткуда, в кровь я кусаю губы,
+Всё, что мне сегодня надо, — просто быть с тобою рядом.
+Ночь, что за странная свобода: от заката до восхода
+Ждать тебя, надеясь вновь. О-о-о.
+День, я прошу тебя — не надо от восхода до заката
+Говорить мне про любовь. О-о-о.
+Ночь, что за странная свобода: от заката до восхода
+Ждать тебя, надеясь вновь. О-о-о.
+День, я прошу тебя — не надо от восхода до заката
+Говорить мне про любовь. О-о-о.
+Ночь, что за странная свобода: от заката до восхода
+Ждать тебя, надеясь вновь. О-о-о.
+День, я прошу тебя — не надо от восхода до заката
+Говорить мне про любовь. О-о-о.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-23">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">23 / 52</span>
+      </div>
+      <h2>Небо</h2>
+      <div class="sh-artist">Дискотека Авария</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Свет далеких планет,
+Нас не манит по ночам,
+Он может нам только сниться.
+Зачем мы встретим рассвет опять в неоновых лучах,
+И завтра все повторится.
+Взгляни, ты помнишь меня? Ведь это были я и ты,
+Летали за облаками.
+Зачем, скажи, люди мысли, песни и мечты
+Скрывают за семью замками?
+Махнем со мной на небо, оставь нараспашку окно!
+Безумно и нелепо, как в забытом кино.
+Летим высоко!
+Любить друг друга в небе меж звезд и облаков.
+Помаши мне рукой!
+Мы на другой планете придумали любовь и свежий ветер.
+Ты увидишь, как в небо уходят корабли,
+Как закат торжественно печален.
+Там, внизу на земле, мы это видеть не могли,
+Мы сами себя не замечали.
+Так необыкновенно: внизу проплывают моря,
+Впервые во Вселенной только мы — ты и я.
+Летим высоко!
+Любить друг друга в небе меж звезд и облаков.
+Помаши мне рукой!
+Мы на другой планете придумали любовь и свежий ветер.
+В час, когда твой сон еще так чуток и невесом,
+И первый лучик солнца к тебе заглянет в дом,
+А может, кто проснется.
+Вдруг приходят сны о небе на руках,
+Сны о теплых берегах и странах,
+И вроде странно, будто ты все это видишь с высоты
+И кто-то есть с тобою рядом.
+Обидно — просыпаться надо.
+Вот и верь тем, кто твердит,
+Что на другой планете любовь и свежий ветер.
+Так необыкновенно: внизу проплывают моря,
+Впервые во Вселенной только мы улетаем с тобой,
+С тобою остаться в небе, как хотелось остаться в небе,
+С тобою остаться в небе.
+Как хотелось остаться в небе нам,
+Хотелось остаться в небе с тобой,
+Хотелось остаться в небе,
+Как хотелось остаться.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-24">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">24 / 52</span>
+      </div>
+      <h2>Танцы</h2>
+      <div class="sh-artist">The Hatters</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Эй)
+(А)
+(Е)
+Я не люблю танцевать,
+Но не люблю танцевать,
+Но я не люблю танцевать,
+Но ради тебя готов на всё.
+Давай двигаться с тобой в такт.
+Если хочешь, будет так,
+Всё подождёт, все позади нас.
+Только здесь и сейчас
+Yeah
+Танцы, танцы, только-только танцы,
+Только танцы,
+Танцы, танцы, только-только танцы,
+Только танцы и ты.
+Танцы, только-только танцы,
+Только танцы,
+Танцы, танцы, только-только танцы,
+Только танцы и ты.
+Только ты, только я, только что? (Танцы!)
+Только танцы и ты.
+Только ты, только я, только что? (Танцы!)
+Всё вокруг застыло,
+Одни во всём мире.
+И нашим движением
+Раскручиваем Землю.
+Я не люблю танцевать,
+Не люблю танцевать,
+Но я не люблю танцевать,
+Но ради тебя готов на всё.
+Только здесь и сейчас
+Yeah
+Танцы, танцы, только-только танцы,
+Только танцы,
+Танцы, танцы, только-только танцы,
+Только танцы и ты.
+Танцы, только-только танцы,
+Только танцы,
+Танцы, танцы, только-только танцы,
+Только танцы и ты.
+Только ты, только я, только что? (Танцы!)
+Только танцы и ты.
+Только ты, только я, только что? (Танцы!)
+Давай!
+Весь мир в наших руках,
+Мы крутим земной шар.
+Весь мир в наших руках,
+Мы крутим земной шар.
+Танцы, танцы, только-только танцы,
+(Весь мир в наших руках)
+Только танцы.
+Мы крутим земной шар.
+Танцы, только-только танцы,
+(Весь мир в наших руках)
+Только танцы.
+Мы крутим, только танцы и ты.
+Весь мир в наших руках,
+Мы крутим земной шар.
+Весь мир в наших руках,
+Мы крутим, только танцы и ты.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-25">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">25 / 52</span>
+      </div>
+      <h2>Текила-любовь</h2>
+      <div class="sh-artist">Валерий Меладзе</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Она бредовая, она неверная
+И от бессонницы когда-нибудь
+Наверное с ума сойдёт
+А я люблю её
+Она тигровая, она пещерная
+И я убью её когда-нибудь
+Наверное под Новый Год
+И воскрешу её
+Вместо слов про мою любовь
+Я кричу от боли
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь
+Она река моя; я посреди неё
+Стою на якоре не видя берегов
+Лишь небо синее
+Невыносимое
+Четыре танца с ней танцуют демоны
+Но этот пятый танец мой
+Уже за облако зашла луна
+Игра окончена
+Вместо слов про мою любовь
+Я кричу от боли
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь
+Тропикана-женщина горяча и бешена
+А внутри солёная словно кровь текила-любовь</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-26">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">26 / 52</span>
+      </div>
+      <h2>Остров</h2>
+      <div class="sh-artist">Леонид Агутин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">За лесом воле-поле, а на небе дождь и тучи.
+А за побережьем море-море, за морем горы груче.
+В небе шальные птицы, им бы только не разбиться,
+Но вероятен случай.
+Ты все начнешь сначала, ты с ума свела не мало,
+Я все пойму однажды, потому что мне не важно,
+Что есть шальные птицы и что это не годится,
+Может я тот отважный.
+Где ты скитаешься, но где скрываешься.
+Ты от людей возьми меня с собой.
+Я тот безумный, видимо, и
+Я могу быть с тобой...
+Просто ты одинокий остров,
+На море, где так часто тонули корабли.
+Может, судьба тебе поможет и ты не будешь больше
+Отшельницей любви...
+За океаном реки, за рекою - лес и горы -
+То, что стоит навеки, остальное - разговоры.
+Ты все поймешь однажды, уже когда не важно,
+Но может очень скоро ты сама собою
+Где-то, будто бы буря в море, не сможешь быть другою,
+Это точно, я не скрою.
+В небе шальные птицы, в море болтают рыбы,
+Им лишь бы с кем-то спорить.
+Где ты скитаешься, но где скрываешься.
+Ты от людей возьми меня с собой.
+Я тот безумный, видимо, и
+Я могу быть с тобой...
+Просто ты одинокий остров,
+На море, где так часто тонули корабли.
+Может, судьба тебе поможет и ты не будешь больше
+Отшельницей любви...
+Где ты скитаешься, но где скрываешься.
+Ты от людей возьми меня с собой.
+Я тот безумный, видимо, и
+Я могу быть с тобой...
+Просто ты одинокий остров,
+На море, где так часто тонули корабли.
+Может, судьба тебе поможет и ты не будешь больше
+Отшельницей любви...
+Просто ты одинокий остров,
+На море, где так часто тонули корабли.
+Может, судьба тебе поможет и ты не будешь больше
+Отшельницей любви...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-27">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">27 / 52</span>
+      </div>
+      <h2>Наше лето</h2>
+      <div class="sh-artist">Валентин Стрыкало</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Тихо лужи покрывает лёд
+Помнишь мы с тобою
+Целовались ночи напролёт
+Под шум прибоя
+Это лето не вернуть уже
+Я знаю
+Но когда печаль в моей душе
+Я вспоминаю
+Яхта
+Парус
+В этом мире только мы одни
+Ялта
+Август
+И мы с тобою влюблены
+Яхта
+Парус
+В этом мире только мы одни
+Ялта
+Август
+И мы с тобою влюблены
+Но расстаться нам с тобой пришлось
+Кончилась путёвка
+И вагон плацкартный меня нёс
+В Новую Каховку
+Не забуду ночи при луне
+И твою улыбку
+Ты открытку подарила мне
+А на той открытке
+Яхта
+Парус
+В этом мире только мы одни
+Ялта
+Август
+И мы с тобою влюблены
+Яхта
+Парус
+В этом мире только мы одни
+Ялта
+Август
+И мы с тобою влюблены
+Яхта
+Парус
+В этом мире только мы одни
+Ялта
+Август
+И мы с тобою влюблены
+И мы с тобою влюблены
+И мы с тобою влюблены
+И мы с тобою влюблены
+И мы с тобою влюблены</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-28">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">28 / 52</span>
+      </div>
+      <h2>Евпатория</h2>
+      <div class="sh-artist">Ляпис Трубецкой</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Эта талая вода
+Напоминает мне всегда
+Что случилось той весной
+Когда встретились с тобой
+Эта громкая капель
+Напоминает тот апрель
+В нём были только я и ты
+И для нас цвели цветы!
+Эта первая гроза
+Напоминает те глаза
+В них желание и страх
+На одинаковых ролях
+Мы гуляли под луной
+Песни нам шептал прибой
+Были только ты и я
+В курорте «Евпатория»
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Но рассеялся роман
+Он словно призрачный туман
+Ты уехала в Латвию
+Я уехал в Татарстан
+Но когда приходит ночь
+Я не в силах превозмочь
+Тайные желания
+Скрыть воспоминания
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Может через двадцать
+Может через тридцать
+Может через сорок, но не скоро
+Может через двадцать
+Может через тридцать
+Может через сорок, но не скоро!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!
+Я тебя не скоро позабуду!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-29">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">29 / 52</span>
+      </div>
+      <h2>На Титанике</h2>
+      <div class="sh-artist">Лолита Милявская</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Нет не надо слов, не надо паники —
+Это мой последний день на Титанике.
+Вот и вся любовь, снимаю батики —
+Это мой последний день на Титанике;
+На Титанике...
+Я схожу на берега. Я когда-то верила
+Во что-то большее, чем:
+Чьи-то громкие слова; чьи-то нежные глаза,
+А по факту — в которых лишь пустота.
+Я себя сделала сама! Я никому, ничего не должна —
+Отпустила и взлетела выше, к далеким берегам;
+Вопреки шансам и острым волнам;
+Отпустила и пропела:
+Вы — не мой капитан, а я — не ваш океан;
+Так оставим ненужные проводы —
+Вы не больше, чем спам
+Разлитый по сердцам.
+Нет не надо слов, не надо паники —
+Это мой последний день на Титанике.
+Вот и вся любовь, снимаю батики —
+Это мой последний день на Титанике!
+Нет не надо слов, не надо паники —
+Это мой последний день на Титанике.
+Вот и вся любовь, бросаю фантики —
+Это мой последний день на Титанике!
+Я схожу на берега;
+Я сегодня до темна, и пью чувства безо льда.
+Я свободна! я жива! Отключите провода
+От моих белых крыльев, а мне пора...
+Я себя сделала сама! Я никому, ничего не должна —
+Отпустила и взлетела выше, к далеким берегам;
+Вопреки шансам и острым волнам;
+Отпустила и пропела:
+Вы — не мой капитан, а я — не ваш океан;
+Так оставим ненужные проводы —
+Вы не больше, чем спам
+Разлитый по сердцам.
+Нет не надо слов, не надо паники —
+Это мой последний день на Титанике.
+Вот и вся любовь, снимаю батики —
+Это мой последний день в акробатике.
+Нет не надо слов, не надо паники —
+Это мой последний день на Титанике.
+Вот и вся любовь, бросаю фантики —
+Это мой последний день на Титанике!
+На Титанике... На Титанике...
+На Титанике... На Титанике...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-30">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">30 / 52</span>
+      </div>
+      <h2>Хали-Гали</h2>
+      <div class="sh-artist">Леприконсы</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Помню, было мне десять лет,
+И я копил на новый велосипед.
+Я жил лишь этою мечтой,
+Пока как-то раз не встретился с тобой.
+Ты меня обворожила,
+Погулять с собою предложила.
+Я взял копилку и разбил,
+И тебя в парк отдыха сводил.
+
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой весь день летали.
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой весь день летали, летали.
+
+Когда мне было пятнадцать лет,
+Я копил на новенький мопед.
+Я жил лишь этою мечтой,
+Пока как-то раз не встретился с тобой.
+Ты меня обворожила,
+На дискач попсовый пригласила.
+Напитков много разных было,
+Ты меня в ту ночь уговорила.
+
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой всю ночь летали.
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой всю ночь летали, летали.
+
+Но ты сказала мне:
+«Извини и проща-ай!»
+Сколько буду жить,
+Я помнить буду это,
+А так и зна-а-ай!
+
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой весь день летали.
+Хали-гали, паратрупер,
+Нам с тобою было супер.
+Супер восемь, хали-гали,
+Мы с тобой весь день летали, летали, летали.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-31">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">31 / 52</span>
+      </div>
+      <h2>Je veux</h2>
+      <div class="sh-artist">Zaz</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Donnez-moi une suite au Ritz, je n&#x27;en veux pas!
+Des bijoux de chez Chanel, je n&#x27;en veux pas!
+Donnez-moi une limousine, j&#x27;en ferais quoi? papala-papapala
+Offrez-moi du personnel, j&#x27;en ferais quoi?
+Un manoir à Neuchâtel, ce n&#x27;est pas pour moi
+Offrez-moi la Tour Eiffel, j&#x27;en ferais quoi? papala-papapala
+(Cha-lapapa-dapa-papa-lapa-lapa-ladee-dada-papa)
+Je veux d&#x27;l&#x27;amour, d&#x27;la joie, de la bonne humeur
+Ce n&#x27;est pas votre argent qui f&#x27;ra mon bonheur
+Moi, j&#x27;veux crever la main sur le coeur (papala-papapala)
+Allons ensemble, découvrir ma liberté
+Oubliez donc tous vos clichés
+Bienvenue dans ma réalité
+J&#x27;en ai marre de vos bonnes manières, c&#x27;est trop pour moi!
+Moi, je mange avec les mains et j&#x27;suis comme ça!
+Je parle fort et je suis franche, excusez-moi!
+Finie l&#x27;hypocrisie moi j&#x27;me casse de là!
+J&#x27;en ai marre des langues de bois!
+Regardez moi, toute manière j&#x27;vous en veux pas et j&#x27;suis comme ça (j&#x27;suis comme ça) papala-papapala
+Je veux d&#x27;l&#x27;amour, d&#x27;la joie, de la bonne humeur
+Ce n&#x27;est pas votre argent qui f&#x27;ra mon bonheur
+Moi, je veux crever la main sur le coeur (papala-papapala)
+Allons ensemble, découvrir ma liberté
+Oubliez donc tous vos clichés
+Bienvenue dans ma réalité
+Je veux d&#x27;l&#x27;amour, d&#x27;la joie, de la bonne humeur
+Ce n&#x27;est pas votre argent qui f&#x27;ra mon bonheur
+Moi, je veux crever la main sur le coeur (papala-papapala)
+Allons ensemble, découvrir ma liberté
+Oubliez donc tous vos clichés
+Bienvenue dans ma réalité
+Je veux d&#x27;l&#x27;amour, d&#x27;la joie, de la bonne humeur
+Ce n&#x27;est pas votre argent qui f&#x27;ra mon bonheur
+Moi, je veux crever la main sur le coeur (papala-papapala)
+Allons ensemble, découvrir ma liberté
+Oubliez donc tous vos clichés
+Bienvenue dans ma réalité</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-32">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">32 / 52</span>
+      </div>
+      <h2>Он тебя целует</h2>
+      <div class="sh-artist">Руки Вверх!</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Вечером тёплым брожу один,
+«Ты не сможешь вернуть её», —
+Шепчет мне нежно дождь.
+Знаю, что встречу тебя с другим,
+Лучше это была б не ты,
+Но рядом с ним ты идёшь.
+
+Я ж тебя так любил, так любил,
+Думал, что ты ждала меня,
+Что же ты сделала.
+Я ж тебя так любил, так любил,
+А теперь потерял тебя.
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят.
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят, о тебе!
+
+Вечером тёплым гремит гроза,
+Снова вижу я вас вдвоём —
+Ты улыбаешься.
+В сторону я отвожу глаза,
+Что же делаешь ты со мной,
+Зачем издеваешься?
+
+Я ж тебя так любил, так любил,
+Думал, что ты ждала меня,
+Что же ты сделала?
+Я ж тебя так любил, так любил,
+А теперь потерял тебя.
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят.
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят, о тебе!
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят.
+
+А он тебя целует,
+Говорит, что любит
+И ночами обнимает,
+К сердцу прижимает.
+А я мучаюсь от боли
+Со своей любовью,
+Фотографии в альбоме
+О тебе напомнят, о тебе!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-33">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">33 / 52</span>
+      </div>
+      <h2>Сиреневая Луна</h2>
+      <div class="sh-artist">Леонид Агутин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Не застилая горизонт твоей луны, которой нет
+Раскрыла ночь огромный зонт
+Встречая розовый рассвет
+Там на сиреневой луне ты так хотела быть одна
+Не забывая обо мне, ты засыпала у окна
+Когда устал новый день, такой же как и всегда
+Ты улетела так далеко
+Когда пришел этот сон, возникший не обо мне
+Ты позабыла все так легко
+Ты забудешь обо мне на сиреневой луне
+Может только на мгновенье
+Оставляя для меня только тоненькую нить
+Только каплю сожаленья
+Там ярче солнце и теплей
+Там нет ни снега, ни дождя
+Там на сиреневой луне ты позабудешь про меня
+Лишь на минуту променяв волненье сердца своего
+На ту планету без дождя, где будет все и ничего
+Когда устал новый день такой же как и всегда
+Ты улетела так далеко
+Когда пришел этот сон, возникший не обо мне
+Ты позабыла все так легко
+Ты забудешь обо мне на сиреневой луне
+Может только на мгновенье
+Оставляя для меня только тоненькую нить
+Только каплю сожаленья
+Ты забудешь обо мне на сиреневой луне
+Может только на мгновенье
+Оставляя для меня только тоненькую нить
+Только каплю сожаленья
+Ты забудешь обо мне на сиреневой луне
+Может только на мгновенье
+Оставляя для меня только тоненькую нить
+Только каплю сожаленья</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-34">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">34 / 52</span>
+      </div>
+      <h2>Ау-ау-ау</h2>
+      <div class="sh-artist">Ляпис Трубецкой</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Если превратишься ты цветочком в поле
+Я пчелкой лепестки твои найду
+Хоть прячься, хоть не прячься - все равно моя ты
+Ду-ду-ду
+Если станешь рыбкой в море
+Ихтиандром я на дно сойду
+Хоть прячься, хоть не прячься - все равно моя ты
+Ду-ду-ду
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей
+Если станешь ты гитарой
+Я баре возьму на пятом ладу
+Хоть прячься, хоть не прячься - все равно моя ты
+Ду-ду-ду
+Если станешь ты розеткой
+Штепселем я в тебя войду
+Хоть прячься, хоть не прячься - все равно моя ты
+Ду-ду-ду
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей
+Ты ромашка, я - весна
+Ты жвачка, я - десна
+Ты переносица, я - гайморит
+Ты Испания, я - Мадрид
+Ты невеста, я - фата
+Ты желудок, я - еда
+Ты мелодия, я - баян
+Ты Роксана, я - Бабаян
+Давай, курчавенький!
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей
+Ау, ау, ау
+Я тебя все равно найду
+Ау, ау, ау
+Э-ге-гей</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-35">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">35 / 52</span>
+      </div>
+      <h2>Bad Romance</h2>
+      <div class="sh-artist">Lady Gaga</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Rah-rah-ah-ah-ah-ah!
+Roma-roma-mamaa!
+Ga-ga-ooh-la-la!
+Want your bad romance
+Rah-rah-ah-ah-ah-ah!
+Roma-roma-mamaa!
+Ga-ga-ooh-la-la!
+Want your bad romance
+I want your ugly
+I want your disease
+I want your everything
+As long as it&#x27;s free
+I want your love
+(Love-love-love I want your love)
+I want your drama
+The touch of your hand
+I want your leather-studded kiss in the sand
+I want your love
+Love-love-love
+I want your love
+(Love-love-love I want your love)
+You know that I want you
+And you know that I need you
+I want it bad, your bad romance
+I want your love and
+I want your revenge
+You and me could write a bad romance
+(Oh-oh-oh--oh-oooh!)
+I want your love and
+All your lovers&#x27; revenge
+You and me could write a bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Caught in a bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Caught in a bad romance
+Rah-rah-ah-ah-ah-ah!
+Roma-roma-mamaa!
+Ga-ga-ooh-la-la!
+Want your bad romance
+I want your horror
+I want your design
+&#x27;Cause you&#x27;re a criminal
+As long as your mine
+I want your love
+(Love-love-love I want your love-uuhh)
+I want your psycho
+Your vertigo stick
+Want you in my rear window
+Baby your sick
+I want your love
+Love-love-love
+I want your love
+(Love-love-love I want your love)
+You know that I want you
+(&#x27;Cause I&#x27;m a freak bitch baby!)
+And you know that I need you
+I want a bad, bad romance
+I want your love and
+I want your revenge
+You and me could write a bad romance
+(Oh-oh-oh-oh-oooh! )
+I want your love and
+All your lovers&#x27; revenge
+You and me could write a bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Caught in a bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Caught in a bad romance
+Rah-rah-ah-ah-ah-ah!
+Roma-roma-mamaa!
+Ga-ga-ooh-la-la!
+Want your bad romance
+Walk, walk fashion baby
+Work it
+Move that bitch crazy
+Walk, walk fashion baby
+Work it
+Move that bitch crazy
+Walk, walk fashion baby
+Work it
+Move that bitch crazy
+Walk, walk passion baby
+Work it
+I&#x27;m a freak bitch, baby
+I want your love and
+I want your revenge
+I want your love
+I don&#x27;t wanna be friends
+Je veux ton amour
+Et je veux ta revanche
+Je veux ton amour
+I don&#x27;t wanna be friends
+Oh-oh-oh-oh-oooh!
+I don&#x27;t wanna be friends
+(Caught in a bad romance)
+I don&#x27;t wanna be friends
+Oh-oh-oh-oh-oooh!
+Want your bad romance
+(Caught in a bad romance)
+Want your bad romance!
+I want your love and
+I want your revenge
+You and me could write a bad romance
+Oh-oh-oh-oh-oooh!
+I want your love and
+All your lovers&#x27; revenge
+You and me could write a bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Want your bad romance
+(Caught in a bad romance)
+Want your bad romance
+Oh-oh-oh-oh-oooh-oh-oh-oh-oooh-oh-oh-oh!
+Want your bad romance
+(Caught in a bad romance)
+Rah-rah-ah-ah-ah-ah!
+Roma-roma-mamaa!
+Ga-ga-ooh-la-la!
+Want your bad romance</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-36">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">36 / 52</span>
+      </div>
+      <h2>Стыцамен</h2>
+      <div class="sh-artist">Иван Дорн</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Этот праздничный бит — совокупность орбит
+Всё как надо играет (А)
+Жарю ультрамальвин и танцую один
+Остальные стесняются
+
+У-у-у, не надо стесняться, м-м
+(Музы-музы-музы)
+А
+
+Музыкальный настрой, в левом ухе си-бемоль
+Так и хочется танцев (А)
+Те, кто слышит мой соул, заполняют танцпол
+Остальные стесняются
+
+У-у-у, не надо стесняться, м-м
+(С музыкой, да?) Е
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+
+Самая-люби-са-са-муз-мая-люби-грает
+Музыка-любви-моя-лю-моя-любви, yeah!
+А
+
+Я особенный тип, слышишь этот мотив?
+Стимуляторы танцев (А)
+Для десятка из ста мысль песни проста
+Не надо стесняться (Е)
+
+У-у-у, не надо стесняться, м-м
+(С музыкой, да?)
+
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+(Самая люби, са-са-муз-мая-люби-гра-грает)
+Самая любимая музыка здесь играет
+
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+Самая любимая музыка здесь играет
+Мне нужен алкоголь, а тебя ждёт на танцполе
+
+(Самая люби, са-са-муз-мая-люби-грает)</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-37">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">37 / 52</span>
+      </div>
+      <h2>Shape of You</h2>
+      <div class="sh-artist">Ed Sheeran</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">The club isn&#x27;t the best place to find a lover
+So the bar is where I go
+Me and my friends at the table doing shots
+Drinking fast and then we talk slow
+And you come over and start up a conversation with just me
+And trust me I&#x27;ll give it a chance now
+Take my hand, stop, put Van the Man on the jukebox
+And then we start to dance, and now I&#x27;m singing like
+Girl, you know I want your love
+Your love was handmade for somebody like me
+Come on now, follow my lead
+I may be crazy, don&#x27;t mind me
+Say, boy, let&#x27;s not talk too much
+Grab on my waist and put that body on me
+Come on now, follow my lead
+Come, come on now, follow my lead
+I&#x27;m in love with the shape of you
+We push and pull like a magnet do
+Although my heart is falling too
+I&#x27;m in love with your body
+And last night you were in my room
+And now my bed sheets smell like you
+Every day discovering something brand new
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Every day discovering something brand new
+I&#x27;m in love with the shape of you
+One week in we let the story begin
+We&#x27;re going out on our first date
+You and me are thrifty, so go all you can eat
+Fill up your bag and I fill up a plate
+We talk for hours and hours about the sweet and the sour
+And how your family is doing okay
+Leave and get in a taxi, then kiss in the backseat
+Tell the driver make the radio play, and I&#x27;m singing like
+Girl, you know I want your love
+Your love was handmade for somebody like me
+Come on now, follow my lead
+I may be crazy, don&#x27;t mind me
+Say, boy, let&#x27;s not talk too much
+Grab on my waist and put that body on me
+Come on now, follow my lead
+Come, come on now, follow my lead
+I&#x27;m in love with the shape of you
+We push and pull like a magnet do
+Although my heart is falling too
+I&#x27;m in love with your body
+And last night you were in my room
+And now my bed sheets smell like you
+Every day discovering something brand new
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Oh—I—oh—I—oh—I—oh—I
+I&#x27;m in love with your body
+Every day discovering something brand new
+I&#x27;m in love with the shape of you
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+Come on, be my baby, come on
+I&#x27;m in love with the shape of you
+We push and pull like a magnet do
+Although my heart is falling too
+I&#x27;m in love with your body
+Last night you were in my room
+And now my bed sheets smell like you
+Every day discovering something brand new
+I&#x27;m in love with your body
+Come on, be my baby, come on
+Come on, be my baby, come on
+I&#x27;m in love with your body
+Come on, be my baby, come on
+Come on, be my baby, come on
+I&#x27;m in love with your body
+Come on, be my baby, come on
+Come on, be my baby, come on
+I&#x27;m in love with your body
+Every day discovering something brand new
+I&#x27;m in love with the shape of you</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-38">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">38 / 52</span>
+      </div>
+      <h2>Между нами любовь</h2>
+      <div class="sh-artist">Serebro</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics medium">Я не держусь руками. За тобой, как за облаками
+Я кусаю губами небо и тебя обнимаю
+Тут, на высоте, можно всё, даже больше ещё;
+Я себя, я себя поджигаю, о-оу...
+На полпути теряя, ты меня дождись, повторяю:
+Твои стихи надевая на себя, я в них утопаю.
+Тут, на высоте, можно всё. Знаю, что нас несёт -
+Я тебя, я тебя догоняю, о-оу...
+Между нами любовь! Между нами любовь!
+Между нами любовь! Вот такая, вот такая любовь!
+Между нами любовь! Между нами любовь!
+Между нами любовь! Вот такая, вот такая любовь!
+Мы ливнем падали в лето - будто было мягко нам это.
+В обрывке сна то, что где-то помнят только наши рассветы!
+Может, мы ошиблись с тобой? Я в тебе с головой...
+Ты меня, ты меня успокой, о-оу...
+Ты как всегда потянешь за рукав меня и заглянешь
+В мои глаза, и обманешь - просто так со мной ты играешь.
+Может, мы ошиблись с тобой. Градус на нулевой;
+Навсегда, навсегда я с тобой, о-оу...
+Между нами любовь! Между нами любовь!
+Между нами любовь! Вот такая, вот такая любовь!
+Между нами любовь! Между нами любовь!
+Между нами любовь! Вот такая, вот такая любовь!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-39">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">39 / 52</span>
+      </div>
+      <h2>Знаешь ли ты</h2>
+      <div class="sh-artist">МакSим</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Я так привыкла жить одним тобой, одним тобой.
+Встречать рассвет и слышать, как проснешься не со мной.
+Мне стало так легко дышать в открытое окно
+И повторять ей лишь одно:
+Знаешь ли ты, вдоль ночных дорог
+Шла босиком, не жалея ног.
+Сердце его теперь в твоих руках,
+Не потеряй его и не сломай.
+Чтоб не нести вдоль ночных дорог
+Пепел любви в руках, сбив ноги в кровь.
+Пульс его теперь в твоих глазах,
+Не потеряй его и не сломай.
+И в январе пусть бьется серый дождь к нему в окно.
+Пусть обнимает не меня, но помнит все равно.
+И пусть случайно мое имя вслух произнесет,
+И пусть молчит, что все же помнит.
+А за окном сжигает фонари проклятый дождь.
+Мой нежный мальчик, ты прости меня за эту дрожь.
+И пусть сквозь слезы прошептала тихое «прощай»,
+Не забывай, не забывай.
+Знаешь ли ты, вдоль ночных дорог
+Шла босиком, не жалея ног.
+Сердце его теперь в твоих руках.
+Не потеряй его и не сломай.
+Чтоб не нести вдоль ночных дорог
+Пепел любви в руках сбив ноги в кровь.
+Пульс его теперь в твоих глазах.
+Не потеряй его и не сломай.
+Знаешь ли ты, вдоль ночных дорог
+Шла босиком, не жалея ног.
+Сердце его теперь в твоих руках.
+Не потеряй его и не сломай.
+Чтоб не нести вдоль ночных дорог
+Пепел любви в руках сбив ноги в кровь.
+Пульс его теперь в твоих глазах.
+Не потеряй его...</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-40">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">40 / 52</span>
+      </div>
+      <h2>Попытка №5</h2>
+      <div class="sh-artist">ВИА Гра</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Я мало кого любила:
+Второй надоел, третьего — забыла.
+Четвертый исчез во вторник,
+О первом почти ничего не помню.
+Но пятый мой — совсем не такой,
+В его руках я таю, как снег.
+Меня уносит теплой рекой в поднебесье.
+А я простила, я простила
+Его опять, опять, опять.
+О, как намаялась я с тобой,
+Моя попытка № 5.
+А я простила, я простила
+Его напрасно, видимо.
+Теперь страдаю от этого,
+Теряя независимость.
+Подруги просили слезно:
+Алена, спасайся, пока не поздно.
+Держись от него подальше,
+Печально сказала подруга Маша.
+Но пятый мой — совсем не такой,
+В его руках я таю, как снег.
+Меня уносит теплой рекой в поднебесье.
+А я простила, я простила
+Его опять, опять, опять.
+О, как намаялась я с тобой,
+Моя попытка № 5.
+А я простила, я простила
+Его напрасно, видимо.
+Теперь страдаю от этого,
+Теряя независимость.
+Соло.
+А я простила, я простила
+Его опять, опять, опять.
+О, как намаялась я с тобой,
+Моя попытка № 5.
+А я простила, я простила
+Его напрасно, видимо.
+Теперь страдаю от этого,
+Теряя независимость.</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-41">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">41 / 52</span>
+      </div>
+      <h2>Невеста</h2>
+      <div class="sh-artist">Глюкоза</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Полночь уже и почти никого,
+Я знаю точно придёт. Ожидаю его.
+Конечно дергаюсь немного,
+Может быть ты забыл.
+Хотя вчера по телефону он секреты открыл.
+Все секреты по карманам,
+Я гуляю с доберманом. Ам!
+Автомобиль подлетел и зовёт,
+И ты выходишь ко мне. Ты похожий на торт.
+Такой-же белый и красивый, никому не отдам.
+И то что влипла я по пояс видел и доберман.
+Я попробую кусочек и дойдём с тобой до точек эк.
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя! Я!
+Чёрный салон, кожа и крокодил.
+И сразу ты на педаль до конца надавил.
+На заднем разные журналы и ГАИ без проблем.
+Не знаю как тебя поймала мой любимый спортсмен.
+На серебряной машине мы в кино на Тарантино Оо!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя! Я!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная.
+Я буду вместо, вместо, вместо неё твоя! Я!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя!
+Я буду вместо, вместо, вместо неё
+Твоя невеста честно, честная Ё.
+Я буду вместо, вместо, вместо неё твоя! Я!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-42">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">42 / 52</span>
+      </div>
+      <h2>Салют, Вера!</h2>
+      <div class="sh-artist">Валерий Меладзе</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Когда закончатся полёты первых ласточек
+И ты усталая придёшь к себе домой
+Увидишь из окна слова из ярких лампочек
+Я напишу тебе: «Не бойся, я с тобой»
+Мы можем быть только на расстоянии и в невесомости
+Хочешь упасть — я неволить не стану, хочешь лететь — лети
+Но я тысячу раз обрывал провода
+Сам себе кричал: «Ухожу навсегда»
+Непонятно, как доживал до утра
+Салют, Вера!
+Но я буду с тобой или буду один
+Дальше не сбежать, ближе не подойти
+Прежде чем навек поменять номера
+Салют, Вера!
+Ты не сбываешься, хоть снишься в ночь на пятницу
+Не отзываешься ни на один пароль
+Не ошибаешься, и мне всё чаще кажется
+Что ты посланница неведомых миров
+Мы можем быть только на расстоянии и в невесомости
+Хочешь упасть — я неволить не стану, хочешь лететь — лети
+Но я тысячу раз обрывал провода
+Сам себе кричал: «Ухожу навсегда»
+Непонятно, как доживал до утра
+Салют, Вера!
+Но я буду с тобой или буду один
+Дальше не сбежать, ближе не подойти
+Прежде чем навек поменять номера
+Салют, Вера!
+Но я тысячу раз обрывал провода
+Сам себе кричал: «Ухожу навсегда»
+Непонятно, как доживал до утра
+Салют, Вера!
+Но я буду с тобой или буду один
+Дальше не сбежать, ближе не подойти
+Прежде чем навек поменять номера
+Салют, Вера!</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-43">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">43 / 52</span>
+      </div>
+      <h2>Девушки как звёзды</h2>
+      <div class="sh-artist">Андрей Губин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Такие девушки как звезды
+Что светят в небе до утра
+Такие девушки как звезды
+Такие звезды, как она
+Такие девушки как звезды
+Такие звезды, как она
+По сиреневым бульварам, по воскресным площадям
+Ходят девушки такие, что не верится глазам
+Не заметить невозможно их волшебной красоты
+И одну из них увидев про себя подумал ты
+Такие девушки как звезды
+Что светят в небе до утра
+В одну из них легко и просто
+Влюбиться раз и навсегда
+Но если ты обычный парень
+Тебе не светят никогда
+Такие девушки как звезды
+Такие звезды, как она
+Такие девушки как звезды
+Такие звезды, как она
+Всем вокруг давно известно: ты не трус и не герой
+Но девчонкам, если честно, не соскучиться с тобой
+И отбросив все сомненья ты шагнул к ней и сказал
+Я такой, как вы, не видел, но всегда о вас мечтал
+Такие девушки как звезды
+Что светят в небе до утра
+В одну из них легко и просто
+Влюбиться раз и навсегда
+Но если ты обычный парень
+Тебе не светят никогда
+Такие девушки как звезды
+Такие звезды, как она
+Такие девушки как звезды
+Такие звезды, как она
+Девушки как звезды
+Звезды как она
+Девушки как звезды
+По сиреневым бульварам, по воскресным площадям
+Ты идешь с такой девчонкой, что не верится глазам
+И на всех друзей вопросы говоришь с улыбкой ты
+Кто сказал, что невозможно дотянуться до звезды
+Дотянуться до звезды, до звезды...
+Такие девушки как звезды
+Что светят в небе до утра
+В одну из них легко и просто
+Влюбиться раз и навсегда
+Но если ты обычный парень
+Тебе не светят никогда
+Такие девушки как звезды
+Такие звезды, как она
+Такие девушки как звезды
+Такие звезды, звезды, звезды
+Такие девушки как звезды
+Что светят в небе до утра
+В одну из них легко и просто
+Влюбиться раз и навсегда
+Но если ты обычный парень
+Тебе не светят никогда
+Такие девушки как звезды
+Такие звезды, как она
+Такие девушки как звезды
+Такие звезды, как она
+Девушки как звезды
+Звезды как она
+Девушки как звезды
+Звезды как она</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-44">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">44 / 52</span>
+      </div>
+      <h2>Вахтёрам</h2>
+      <div class="sh-artist">Бумбокс</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Тебе не нравится дым и чёрт с ним
+Он убивает слова, кругом голова
+Уже разносит молва по дворам
+Что между нами чивава
+О чём с тобой говорить, потеряли нить
+Быть не собой перестать и дома спать
+Нас не измерить на глаз, а сейчас
+Зачем мы давим на тормоз, не на газ?
+Вопрос извечный зачем да почему
+Я понемногу с ума, ты не сама
+А эти ночи в Крыму теперь кому
+Я если встречу потом передам ему
+Писклявый твой голосок как электрошок
+Что я бухой без вина твоя вина
+Теперь узнает страна до темна
+Им донесут обо всем на fm волнах
+Я помню белые обои, чёрная посуда
+Нас в хрущёвке двое, кто мы и откуда? Откуда?
+Задвигаем шторы, кофеёк, плюшки стынут
+Объясните теперь нам, вахтёры
+Почему я на ней так сдвинут?
+Давай вот так просидим до утра
+Не уходи, погоди - но мне пора
+И если выход один впереди
+То почему мы то холод то жара?
+Раскладывать по местам я устал
+И поворачивать вспять, ну вот опять
+Прикосновения плавили мой метал
+Ты элемент номер пять ни дать ни взять
+Идёт к финалу игра в этот раз
+А ты всё так же молчишь, я говорю
+Минут пятнадцать осталось до утра
+Не вызывай так словлю и свалю
+Попробуем всё подшить не ворошить
+Мобильные номера постирать
+А уходить не спросив нету сил
+Давай попробуем заново всё собрать
+Белые обои, чёрную посуду
+Нас в хрущёвке двое, кто мы и откуда? Откуда?
+Задвигаем шторы, кофеёк, плюшки стынут
+Объясните теперь нам, вахтёры
+Почему я на ней так сдвинут?
+Я помню белые обои, чёрная посуда
+Нас в хрущёвке двое, кто мы и откуда? Откуда?
+Задвигаем шторы, кофеёк, плюшки стынут
+Объясните теперь нам, вахтёры
+Почему я на ней так сдвинут?
+Белые обои, чёрная посуда
+Нас в хрущёвке двое, кто мы и откуда? Откуда?
+Задвигаем шторы, кофеёк, плюшки стынут
+Объясните теперь нам, вахтёры
+Почему я на ней так сдвинут?</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-45">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">45 / 52</span>
+      </div>
+      <h2>Конь</h2>
+      <div class="sh-artist">Любэ</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Выйду ночью в поле с конём
+Ночкой тёмной тихо пойдём
+Мы пойдём с конём по полю вдвоём
+Мы пойдём с конём по полю вдвоём
+Мы пойдём с конём по полю вдвоём
+Мы пойдём с конём по полю вдвоём
+Ночью в поле звёзд благодать
+В поле никого не видать
+Только мы с конём по полю идём
+Только мы с конём по полю идём (да вдвоём)
+Только мы с конём по полю идём
+Только мы с конём по полю идём
+Сяду я верхом на коня
+Ты неси по полю меня
+По бескрайнему полю моему
+По бескрайнему полю моему
+Дай-ка я разок посмотрю
+Где рождает поле зарю
+Ай, брусничный свет, алый да рассвет
+Али есть то место, али его нет
+Ай, брусничный свет, алый да рассвет
+Али есть то место, али его нет
+Полюшко моё, родники
+Дальних деревень огоньки
+Золотая рожь да кудрявый лён
+Я влюблён в тебя, Россия, влюблён
+Золотая рожь да кудрявый лён
+Я влюблён в тебя, Россия, влюблён
+Будет добрым год хлебород
+Было всяко — всяко пройдёт
+Пой златая рожь, пой кудрявый лён
+Пой о том, как я в Россию влюблён
+Пой златая рожь, пой кудрявый лён
+Мы идём с конём по полю вдвоём</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-46">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">46 / 52</span>
+      </div>
+      <h2>Крошка моя</h2>
+      <div class="sh-artist">Руки Вверх!</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Крошка моя, я по тебе скучаю
+Я от тебя письма не получаю
+Ты далеко и даже не скучала
+Но я вернусь, вернусь, чтоб ты узнала
+Что я далеко, я по тебе скучаю
+Я от тебя письма не получаю
+Ты далеко и даже не скучаешь
+Но я вернусь, вернусь, и ты узнаешь
+Что я далеко от тебя
+Ты обещала написать, обещала рассказать
+Как живёшь, как тебе там сложно
+Ты обещала долго ждать, и страдать
+И сгорать от любви, но это невозможно
+Нет, нет ни строчки от тебя, ни словечка от тебя
+Зря поверил я твоим признаниям
+Да, может, это было зря, может, это было зря
+Ты скажи, что ж за наказание
+Крошка моя, я по тебе скучаю
+Я от тебя письма не получаю
+Ты далеко и даже не скучаешь
+Но я вернусь, вернусь, и ты узнаешь
+Что я далеко от тебя
+Что, что ещё произошло? Сколько времени прошло?
+Ты не едешь, не звонишь, не пишешь
+Да, может быть, твоё письмо, затерялось, не дошло
+Напиши ещё разок, ты слышишь?
+Всё, всё отлично у меня, дома ждут меня друзья
+Говорят, что ты по мне скучаешь
+Вот, вот у девчонок так всегда, ждёт солдат от вас письма
+А дойдёт - сто раз перечитает
+Крошка моя, я по тебе скучаю
+Я от тебя письма не получаю
+Ты далеко и даже не скучаешь
+Но я вернусь, вернусь, и ты узнаешь
+Что я далеко, я по тебе скучаю
+Я от тебя письма не получаю
+Ты далеко и даже не скучала
+Но я вернусь, вернусь, чтоб ты узнала
+Что я далеко от тебя</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-47">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">47 / 52</span>
+      </div>
+      <h2>Тополиный пух</h2>
+      <div class="sh-artist">Иванушки International</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">На асфальте мелом ты рисуешь лето
+Ласковое море трогаешь ладонью
+Воду, воздух, время (маленькую тайну)
+То, чего не знаешь (никому не скажешь)
+И беспечной птицей в небо улетаешь
+Тополиный пух, жара, июль
+Ночи такие звёздные
+Ты пойми, что первый поцелуй
+Это ещё не любовь
+Это лишь такой закон борьбы противоположностей
+Тополиный пух, жара, июль
+Ветер уносит в небо
+Только ты не веришь никому
+Ждёшь ты только снега, снега, снега
+А ладони к небу, а то просто к сердцу
+Где найти бы счастья маленькую дверцу (маленькую дверцу)
+Далеко-далёко парус уплывает (парус уплывает)
+В этой жизни счастья мало так бывает
+Тополиный пух, жара, июль
+Ночи такие тёплые
+Ты пойми, что первый поцелуй
+Это ещё не любовь
+Это лишь такой закон борьбы противоположностей
+Тополиный пух, жара, июль
+Ветер уносит в небо
+Только ты не веришь никому
+Ждёшь ты только снега, снега, снега
+Тополиный пух, тополиный пух
+Тополиный пух, тополиный пух
+Тополиный пух, тополиный пух
+Тополиный пух, тополиный пух
+Тополиный пух, тополиный пух
+Тополиный пух, жара, июль
+Ночи такие лунные
+А солёный ветер с моря дул
+Унося с собою мысли грустные
+Тополиный пух, гроза!
+Белые хлопья снега
+И любовь к тебе пришла
+Этим снежным летом, летом
+Любовь
+Любовь</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-48">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">48 / 52</span>
+      </div>
+      <h2>Выхода нет</h2>
+      <div class="sh-artist">Сплин</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Сколько лет прошло, всё о том же гудят провода
+Всё того же ждут самолёты
+Девочка с глазами из самого синего льда
+Тает под огнём пулемёта
+Должен же растаять хоть кто-то
+Скоро рассвет, выхода нет
+Ключ поверни и полетели
+Нужно писать в чью-то тетрадь
+Кровью, как в метрополитене
+Выхода нет
+Выхода нет
+Где-то мы расстались, не помню в каких городах
+Словно это было в похмелье
+Через мои песни идут и идут поезда
+Исчезая в тёмном тоннеле
+Лишь бы мы проснулись в одной постели
+Скоро рассвет, выхода нет
+Ключ поверни и полетели
+Нужно писать в чью-то тетрадь
+Кровью, как в метрополитене
+Выхода нет
+Выхода нет
+Сколько лет пройдёт, всё о том же гудеть проводам
+Всё того же ждать самолётам
+Девочка с глазами из самого синего льда
+Тает под огнём пулемёта
+Лишь бы мы проснулись с тобой в одной постели
+Скоро рассвет, выхода нет
+Ключ поверни и полетели
+Нужно писать в чью-то тетрадь
+Кровью, как в метрополитене
+Выхода нет
+Выхода нет
+Выхода нет
+Выхода нет</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-49">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">49 / 52</span>
+      </div>
+      <h2>Don&#x27;t Speak</h2>
+      <div class="sh-artist">No Doubt</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">You and me
+We used to be together
+Everyday together always
+I really feel
+That I&#x27;m losing my best friend
+I can&#x27;t believe
+This could be the end
+It looks as though you&#x27;re letting go
+And if it&#x27;s real
+Well I don&#x27;t want to know
+
+Don&#x27;t speak
+I know just what you&#x27;re saying
+So please stop explaining
+Don&#x27;t tell me cause it hurts
+Don&#x27;t speak
+I know what you&#x27;re thinking
+I don&#x27;t need your reasons
+Don&#x27;t tell me cause it hurts
+
+Our memories
+Well, they can be inviting
+But some are altogether
+Mighty frightening
+As we die, both you and I
+With my head in my hands
+I sit and cry
+
+Don&#x27;t speak
+I know just what you&#x27;re saying
+So please stop explaining
+Don&#x27;t tell me cause it hurts (no, no, no)
+Don&#x27;t speak
+I know what you&#x27;re thinking
+I don&#x27;t need your reasons
+Don&#x27;t tell me cause it hurts
+
+It&#x27;s all ending
+I gotta stop pretending who we are...
+You and me I can see us dying...are we?
+
+Don&#x27;t speak
+I know just what you&#x27;re saying
+So please stop explaining
+Don&#x27;t tell me cause it hurts (no, no, no)
+Don&#x27;t speak
+I know what you&#x27;re thinking
+I don&#x27;t need your reasons
+Don&#x27;t tell me cause it hurts
+Don&#x27;t tell me cause it hurts!
+I know what you&#x27;re saying
+So please stop explaining
+
+Don&#x27;t speak,
+don&#x27;t speak,
+don&#x27;t speak,
+oh I know what you&#x27;re thinking
+And I don&#x27;t need your reasons
+I know you&#x27;re good,
+I know you&#x27;re good,
+I know you&#x27;re real good
+Oh, la la la la la la La la la la la la
+Don&#x27;t, Don&#x27;t, uh-huh Hush, hush darlin&#x27;
+Hush, hush darlin&#x27; Hush, hush
+don&#x27;t tell me tell me cause it hurts
+Hush, hush darlin&#x27; Hush, hush darlin&#x27;
+Hush, hush don&#x27;t tell me tell me cause it hurts</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-50">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">50 / 52</span>
+      </div>
+      <h2>Je t&#x27;aime</h2>
+      <div class="sh-artist">Lara Fabian</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">D&#x27;accord, il existait
+D&#x27;autres façons de se quitter
+Quelques éclats de verre
+Auraient peut-être pu nous aider
+Dans ce silence amer,
+J&#x27;ai décidé de pardonner
+Les erreurs qu&#x27;on peut faire à trop s&#x27;aimer
+D&#x27;accord la petite fille en moi
+Souvent te réclamait
+Presque comme une mère,
+Tu me bordais, me protégeais
+Je t&#x27;ai volé ce sang
+Qu&#x27;on aurait pas dû partager
+A bout de mots, de rêves je vais crier
+Je t&#x27;aime, je t&#x27;aime
+Comme un fou comme un soldat
+Comme une star du cinéma
+Je t&#x27;aime, je t&#x27;aime
+Comme un loup, comme un roi
+Comme un homme que je ne suis pas
+Tu vois, je t&#x27;aime comme ça
+D&#x27;accord je t&#x27;ai confié
+Tous mes sourires, tous mes secrets
+Même ceux, dont seul un frère
+Est le gardien inavoué
+Dans cette maison de pierre,
+Satan nous regardait danser
+J&#x27;ai tant voulu la guerre de corps
+Qui se faisaient la paix
+Je t&#x27;aime, je t&#x27;aime
+Comme un fou comme un soldat
+Comme une star du cinéma
+Je t&#x27;aime, je t&#x27;aime
+Comme un loup, comme un roi
+Comme un homme que je ne suis pas
+Tu vois, je t&#x27;aime comme ça
+Je t&#x27;aime, je t&#x27;aime
+Comme un fou comme un soldat
+Comme une star de cinema
+Je t&#x27;aime, je t&#x27;aime, je t&#x27;aime, je t&#x27;aime, je t&#x27;aime, je t&#x27;aime
+Comme un loup comme un roi
+Comme un homme que je ne suis pas
+Tu vois, je t’aime comme ça
+Tu vois, je t’aime comme ça</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-51">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">51 / 52</span>
+      </div>
+      <h2>Солдат</h2>
+      <div class="sh-artist">5&#x27;nizza</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col dense">Я солдат
+Я не спал пять лет и у меня под глазами мешки
+Я сам не видел, но мне так сказали
+Я солдат
+И у меня нет башки, мне отбили её сапогами
+Ё-ё-ё комбат орёт
+Разорванный рот у комбата, потому что граната
+Белая вата, красная вата не лечит солдата
+
+Я солдат
+Недоношенный ребёнок войны
+Я солдат
+Мама залечи мои раны
+Я солдат
+Солдат забытой Богом страны
+Я герой
+Скажите мне, какого романа
+
+О-о-о-о-о-о-о
+У-е
+У-е-е
+О-о-о-о-о-о-о
+Я солдат
+Мне обидно, когда остаётся один патрон
+Только я или он
+Последний вагон
+Самогон
+Нас таких миллион
+В ОООН
+Я солдат
+И я знаю своё дело
+Моё дело - стрелять
+Чтобы пуля попала
+В тело врага
+Это рагга для тебя мама - война, теперь ты довольна
+
+Я солдат
+Недоношенный ребёнок войны
+Я солдат
+Мама залечи мои раны
+Я солдат
+Солдат забытой Богом страны
+Я герой
+Скажите мне, какого романа
+
+О-о-о-о-о-о-о
+У-е
+У-е-е
+О-о-о-о-о-о-о
+I&#x27;m a soldier
+I&#x27;m a soldier
+I&#x27;m a soldja
+I&#x27;m a soldier
+I&#x27;m a soldier
+Soldier
+Soldier
+I&#x27;m a soldier
+I&#x27;m a soldier
+I&#x27;m a soldier
+I&#x27;m a soldier
+I&#x27;m a soldier
+Soldier
+Soldier
+
+Я солдат
+Недоношенный ребёнок войны
+Я солдат
+Мама залечи мои раны
+Я солдат
+Солдат забытой Богом страны
+Я герой
+Скажите мне, какого романа
+О-о-о-о-о-о-о
+У-е
+У-е-е
+О-о-о-о-о-о-о</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
+  <section class="slide song-slide" id="song-52">
+    <div class="sh">
+      <div class="sh-row">
+        <a href="#" class="btn-back" data-go="toc">← К списку</a>
+        <span class="sh-num">52 / 52</span>
+      </div>
+      <h2>Солнышко</h2>
+      <div class="sh-artist">Демо</div>
+    </div>
+    <div class="lyrics-wrap">
+      <pre class="lyrics two-col">Я отрываюсь от земли
+Я от тебя на полпути
+И мне так важно, что ты думаешь об этом
+Огонь подружится с дождем
+Мы будем делать это вдвоем
+Не вспоминая о проблемах и запретах
+Солнышко в руках
+И венок из звезд в небесах
+И с других планет все видят нас
+Мне так хорошо с тобой мечтать об этом
+Где-то над землей
+Мы парим с тобой в облаках
+Как лавиной снежной в горах
+Нас накроет счастьем и теплым ветром
+(теплым ветром)
+Мне было стыдно сделать шаг
+И побороть свой детский страх
+Но мы, как два крыла, всегда должны быть рядом
+Я оттолкнусь от скучных слов
+Освобожусь от тяжких оков
+Хочу, чтоб счастье стало нам с тобой наградой
+Солнышко в руках
+И венок из звезд в небесах
+И с других планет все видят нас
+Мне так хорошо с тобой мечтать об этом
+Где-то над землей
+Мы парим с тобой в облаках
+Как лавиной снежной в горах
+Нас накроет счастьем и теплым ветром
+Солнышко в руках
+И венок из звезд в небесах
+И с других планет все видят нас
+Мне так хорошо с тобой мечтать об этом
+Где-то над землей
+Мы парим с тобой в облаках
+Как лавиной снежной в горах
+Нас накроет счастьем и теплым ветром</pre>
+    </div>
+    <div class="song-nav">
+      <button class="nav prev" data-go-rel="-1">← Пред.</button>
+      <button class="nav next" data-go-rel="+1">След. →</button>
+    </div>
+  </section>
 
 <script>
-  const songs = [
-    { n: 1,  title: "Нас не догонят",                  artist: "t.A.T.u.",                 lang: "ru" },
-    { n: 2,  title: "Кукушка",                          artist: "Полина Гагарина",         lang: "ru" },
-    { n: 3,  title: "Напитки покрепче",                 artist: "Звери",                    lang: "ru" },
-    { n: 4,  title: "Южная ночь",                       artist: "Звери",                    lang: "ru" },
-    { n: 5,  title: "Ариведерчи",                       artist: "Земфира",                  lang: "ru" },
-    { n: 6,  title: "Искала",                           artist: "Земфира",                  lang: "ru" },
-    { n: 7,  title: "Ракеты",                           artist: "Земфира",                  lang: "ru" },
-    { n: 8,  title: "Мой рок-н-ролл",                   artist: "Би-2",                     lang: "ru" },
-    { n: 9,  title: "Люби меня, люби",                  artist: "Отпетые Мошенники",        lang: "ru" },
-    { n: 10, title: "А не спеть ли мне песню",          artist: "Чайф",                     lang: "ru" },
-    { n: 11, title: "Видели ночь",                      artist: "Zdob și Zdub",             lang: "ru" },
-    { n: 12, title: "Перемен!",                         artist: "Кино",                     lang: "ru" },
-    { n: 13, title: "Это всё",                          artist: "ДДТ",                      lang: "ru" },
-    { n: 14, title: "Что такое осень",                  artist: "ДДТ",                      lang: "ru" },
-    { n: 15, title: "Лесник",                           artist: "Король и Шут",             lang: "ru" },
-    { n: 16, title: "Верхом на звезде",                 artist: "Найк Борзов",              lang: "ru" },
-    { n: 17, title: "Батарейка",                        artist: "Жуки",                     lang: "ru" },
-    { n: 18, title: "Любочка",                          artist: "Маша и Медведи",           lang: "ru" },
-    { n: 19, title: "7000 над землёй",                  artist: "Валерий Сюткин",           lang: "ru" },
-    { n: 20, title: "Невеста",                          artist: "Мумий Тролль",             lang: "ru" },
-    { n: 21, title: "Районы-кварталы",                  artist: "Звери",                    lang: "ru" },
-    { n: 22, title: "Ночь",                             artist: "Андрей Губин",             lang: "ru" },
-    { n: 23, title: "Небо",                             artist: "Дискотека Авария",         lang: "ru" },
-    { n: 24, title: "Танцы",                            artist: "The Hatters",              lang: "ru" },
-    { n: 25, title: "Текила-любовь",                    artist: "Натали",                   lang: "ru" },
-    { n: 26, title: "Остров",                           artist: "Леонид Агутин",            lang: "ru" },
-    { n: 27, title: "Ялта, парус на заре",              artist: "Валентин Стрыкало",        lang: "ru" },
-    { n: 28, title: "Евпатория",                        artist: "Ляпис Трубецкой",          lang: "ru" },
-    { n: 29, title: "На Титанике",                      artist: "Лолита Милявская",         lang: "ru" },
-    { n: 30, title: "Хали-Гали",                        artist: "Леприконсы",               lang: "ru" },
-    { n: 31, title: "Je veux",                          artist: "Zaz",                      lang: "fr" },
-    { n: 32, title: "Он тебя целует",                   artist: "Руки Вверх!",              lang: "ru" },
-    { n: 33, title: "Сиреневая Луна",                   artist: "Леонид Агутин",            lang: "ru" },
-    { n: 34, title: "Ау-ау-ау",                         artist: "Ляпис Трубецкой",          lang: "ru" },
-    { n: 35, title: "Bad Romance",                      artist: "Lady Gaga",                lang: "en" },
-    { n: 36, title: "Стыцамен",                         artist: "Иван Дорн",                lang: "ru" },
-    { n: 37, title: "Shape of You",                     artist: "Ed Sheeran",               lang: "en" },
-    { n: 38, title: "Между нами любовь",                artist: "Serebro",                  lang: "ru" },
-    { n: 39, title: "Знаешь ли ты",                     artist: "МакSим",                   lang: "ru" },
-    { n: 40, title: "Попытка №5",                       artist: "ВИА Гра",                  lang: "ru" },
-    { n: 41, title: "Невеста",                          artist: "Глюкоза",                  lang: "ru" },
-    { n: 42, title: "Салют, Вера!",                     artist: "Иванушки International",   lang: "ru" },
-    { n: 43, title: "Девушки как звёзды",               artist: "Андрей Губин",             lang: "ru" },
-    { n: 44, title: "Вахтёрам",                         artist: "Бумбокс",                  lang: "ru" },
-    { n: 45, title: "Конь",                             artist: "Любэ",                     lang: "ru" },
-    { n: 46, title: "Крошка моя",                       artist: "Руки Вверх!",              lang: "ru" },
-    { n: 47, title: "Тополиный пух",                    artist: "Иванушки International",   lang: "ru" },
-    { n: 48, title: "Выхода нет",                       artist: "Сплин",                    lang: "ru" },
-    { n: 49, title: "Don't Speak",                      artist: "No Doubt",                 lang: "en" },
-    { n: 50, title: "Je t'aime",                        artist: "Lara Fabian",              lang: "fr" },
-    { n: 51, title: "Солдат",                           artist: "5'nizza",                  lang: "ru" },
-    { n: 52, title: "Солнышко",                         artist: "Демо",                     lang: "ru" }
-  ];
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const songSlides = Array.from(document.querySelectorAll('.song-slide'));
+  const total = songSlides.length;
 
-  function lyricsUrl(s) {
-    const suffix = s.lang === "en" ? "lyrics" : s.lang === "fr" ? "paroles" : "текст песни";
-    const q = `${s.artist} ${s.title} ${suffix}`;
-    return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  function autoFitLyrics(slide) {
+    const lyrics = slide.querySelector('.lyrics');
+    const wrap = slide.querySelector('.lyrics-wrap');
+    if (!lyrics || !wrap) return;
+    // Mobile: linear single-column with comfortable size; just scroll if needed.
+    if (window.innerWidth < 600) {
+      lyrics.style.fontSize = '18px';
+      return;
+    }
+    // Desktop: detect actual rendered column count and binary-search best font size.
+    const cs = window.getComputedStyle(lyrics);
+    const colCount = parseInt(cs.columnCount) || 1;
+    const minSize = 12;
+    const maxSize = colCount > 1 ? 26 : 38;
+    lyrics.style.fontSize = '';
+    let lo = minSize, hi = maxSize, best = minSize;
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      lyrics.style.fontSize = mid + 'px';
+      void lyrics.offsetHeight;
+      if (lyrics.scrollHeight <= wrap.clientHeight + 1) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    lyrics.style.fontSize = best + 'px';
   }
 
-  const list = document.getElementById("songs");
-  songs.forEach(s => {
-    const li = document.createElement("li");
-    li.dataset.search = (s.title + " " + s.artist).toLowerCase();
-    li.innerHTML = `
-      <a href="${lyricsUrl(s)}" target="_blank" rel="noopener noreferrer">
-        <span class="num">${String(s.n).padStart(2, "0")}</span>
-        <span class="meta">
-          <span class="title">${s.title}</span>
-          <span class="artist">${s.artist}</span>
-        </span>
-        <span class="arrow">↗</span>
-      </a>
-    `;
-    list.appendChild(li);
+  function go(target) {
+    slides.forEach(s => s.classList.remove('active'));
+    if (target === 'toc') {
+      document.getElementById('toc-slide').classList.add('active');
+      window.location.hash = '';
+    } else {
+      const el = document.getElementById('song-' + target);
+      if (el) {
+        el.classList.add('active');
+        window.location.hash = 'song-' + target;
+        const n = parseInt(target);
+        const prev = el.querySelector('.prev');
+        const next = el.querySelector('.next');
+        prev.disabled = (n <= 1);
+        next.disabled = (n >= 52);
+        const lyr = el.querySelector('.lyrics');
+        if (lyr) lyr.scrollTop = 0;
+        requestAnimationFrame(() => autoFitLyrics(el));
+      } else {
+        document.getElementById('toc-slide').classList.add('active');
+      }
+    }
+  }
+
+  window.addEventListener('resize', () => {
+    const cur = document.querySelector('.song-slide.active');
+    if (cur) autoFitLyrics(cur);
   });
 
-  const filterEl = document.getElementById("filter");
-  const emptyEl = document.getElementById("empty");
-  filterEl.addEventListener("input", () => {
+  // Click handlers
+  document.body.addEventListener('click', e => {
+    const t = e.target.closest('[data-go]');
+    if (t) {
+      e.preventDefault();
+      go(t.dataset.go);
+      return;
+    }
+    const r = e.target.closest('[data-go-rel]');
+    if (r) {
+      e.preventDefault();
+      const cur = document.querySelector('.song-slide.active');
+      if (!cur) return;
+      const n = parseInt(cur.id.replace('song-', ''));
+      const next = n + parseInt(r.dataset.goRel);
+      if (next >= 1 && next <= total) go(String(next));
+    }
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    const cur = document.querySelector('.song-slide.active');
+    if (e.key === 'Escape' || e.key === 'Home') {
+      e.preventDefault(); go('toc');
+    } else if (cur) {
+      const n = parseInt(cur.id.replace('song-', ''));
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault(); if (n < total) go(String(n + 1));
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault(); if (n > 1) go(String(n - 1));
+      }
+    }
+  });
+
+  // Filter
+  const filterEl = document.getElementById('filter');
+  const emptyEl = document.getElementById('empty');
+  const tocEl = document.getElementById('toc');
+  filterEl.addEventListener('input', () => {
     const q = filterEl.value.trim().toLowerCase();
     let visible = 0;
-    list.querySelectorAll("li").forEach(li => {
-      const match = li.dataset.search.includes(q);
-      li.classList.toggle("hidden", !match);
+    tocEl.querySelectorAll('li').forEach(li => {
+      const text = li.textContent.toLowerCase();
+      const match = text.includes(q);
+      li.classList.toggle('hidden', !match);
       if (match) visible++;
     });
-    emptyEl.classList.toggle("show", visible === 0);
+    emptyEl.classList.toggle('show', visible === 0);
   });
+
+  // Honor URL hash
+  const m = window.location.hash.match(/song-(\d+)/);
+  if (m) go(m[1]);
 </script>
 
 </body>
