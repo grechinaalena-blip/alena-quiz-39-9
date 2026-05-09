@@ -1,0 +1,2341 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Квиз на ДР — Раунд 1</title>
+<style>
+  :root {
+    --bg: #0f0a1a;
+    --bg-2: #1a0f2e;
+    --ink: #f6efe7;
+    --muted: #b9a8d9;
+    --accent: #ffb84d;
+    --accent-2: #ff5e7e;
+    --card: rgba(255, 255, 255, 0.04);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --answer-bg: linear-gradient(135deg, #2a1240 0%, #401a36 100%);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 800px at 80% -10%, rgba(255, 94, 126, 0.25), transparent 60%),
+      radial-gradient(900px 700px at -10% 110%, rgba(255, 184, 77, 0.18), transparent 60%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Slide */
+  .deck { position: fixed; inset: 0; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    padding: 4vmin 6vmin 8vmin;
+    flex-direction: column;
+    justify-content: center;
+    animation: fade .35s ease-out;
+  }
+  .slide.active { display: flex; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Header bar */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 28px;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .topbar .pill {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Footer / progress */
+  .footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 18px;
+    font-size: 13px;
+    color: var(--muted);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .progress {
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    flex: 1;
+    margin: 0 18px;
+  }
+  .progress > div {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width .3s ease;
+  }
+
+  /* Title slide */
+  .title-slide { text-align: center; align-items: center; }
+  .title-slide h1 {
+    font-size: clamp(48px, 8vw, 120px);
+    margin: 0;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .title-slide .sub {
+    margin-top: 24px;
+    font-size: clamp(20px, 2.4vw, 32px);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .title-slide .hint {
+    margin-top: 60px;
+    font-size: 14px;
+    color: var(--muted);
+    opacity: .6;
+  }
+
+  /* Round intro */
+  .round-intro { text-align: center; align-items: center; }
+  .round-intro .kicker {
+    font-size: clamp(14px, 1.4vw, 18px);
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .round-intro h2 {
+    font-size: clamp(40px, 6vw, 96px);
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .round-intro .desc {
+    margin-top: 28px;
+    font-size: clamp(18px, 2vw, 28px);
+    color: var(--muted);
+    max-width: 28ch;
+    line-height: 1.4;
+  }
+  .round-intro .rules-pill {
+    margin-top: 48px;
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: rgba(255, 184, 77, 0.14);
+    border: 1px solid rgba(255, 184, 77, 0.35);
+    color: var(--accent);
+    font-size: clamp(14px, 1.4vw, 18px);
+    font-weight: 500;
+    letter-spacing: .02em;
+  }
+
+  /* Question slide */
+  .q-slide { gap: 4vmin; }
+  .q-layout {
+    display: grid;
+    gap: 4vmin;
+    align-items: center;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    flex: 1;
+  }
+  .q-layout.with-image { grid-template-columns: 1.05fr 1fr; }
+  .q-layout.with-image.text-wide { grid-template-columns: 1.7fr 1fr; }
+  .q-layout.with-image.text-wide .q-text-block .question {
+    max-width: 44ch;
+    font-size: clamp(20px, 2.2vw, 34px);
+    line-height: 1.3;
+  }
+  .q-layout.with-image.text-wide .q-text-block .num {
+    font-size: clamp(40px, 5.5vw, 90px);
+    margin-bottom: 8px;
+  }
+  .q-layout.with-quote { grid-template-columns: 1.05fr 1fr; }
+  .q-layout.with-video { grid-template-columns: 1.05fr 1fr; }
+  .q-layout.with-audio { grid-template-columns: 1.05fr 1fr; }
+  .q-layout.no-image   { grid-template-columns: 1fr; }
+
+  .q-quote {
+    border-left: 4px solid var(--accent);
+    padding: 16px 0 16px 32px;
+    font-size: clamp(26px, 3vw, 48px);
+    line-height: 1.3;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .q-quote .line { display: block; }
+  .q-quote.poem {
+    font-size: clamp(20px, 2.2vw, 32px);
+    line-height: 1.5;
+  }
+
+  .q-text-block .num {
+    font-size: clamp(56px, 9vw, 140px);
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+  }
+  .q-text-block .question {
+    font-size: clamp(24px, 2.8vw, 44px);
+    line-height: 1.25;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    max-width: 22ch;
+  }
+  .q-text-block .question em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .q-layout.no-image .q-text-block {
+    max-width: 40ch;
+  }
+  .q-layout.no-image .q-text-block .num {
+    font-size: clamp(48px, 7vw, 110px);
+  }
+  .q-layout.no-image .q-text-block .question {
+    max-width: 38ch;
+    font-size: clamp(22px, 2.4vw, 38px);
+    line-height: 1.3;
+  }
+  .q-layout.no-image .q-text-block.wide {
+    max-width: 70ch;
+  }
+  .q-layout.no-image .q-text-block.wide .num {
+    font-size: clamp(40px, 5vw, 80px);
+    margin-bottom: 8px;
+  }
+  .q-layout.no-image .q-text-block.wide .question {
+    max-width: 68ch;
+    font-size: clamp(20px, 2vw, 32px);
+    line-height: 1.35;
+  }
+
+  .q-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  }
+  .q-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .q-image.contain { background: #1a0f2e; }
+  .q-image.contain img { object-fit: contain; }
+
+  .q-video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 30px 80px rgba(0,0,0,.35);
+  }
+  .q-video.portrait {
+    aspect-ratio: 9 / 16;
+    width: auto;
+    max-height: 78vh;
+    margin: 0 auto;
+  }
+
+  .wives-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .wives-grid figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .wives-grid figure img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+    display: block;
+  }
+  .wives-grid figcaption {
+    text-align: center;
+    color: var(--accent);
+    font-size: clamp(14px, 1.3vw, 18px);
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+
+  /* Audio card for music round */
+  .q-audio {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 70vh;
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255, 184, 77, 0.25), transparent 55%),
+      radial-gradient(circle at 70% 80%, rgba(255, 94, 126, 0.3), transparent 55%),
+      linear-gradient(135deg, #2a1240 0%, #401a36 100%);
+    border: 1px solid rgba(255, 184, 77, 0.25);
+    box-shadow: 0 30px 80px rgba(0,0,0,.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(20px, 2.5vw, 36px);
+    padding: clamp(24px, 4vw, 56px);
+    margin: 0 auto;
+    aspect-ratio: 1 / 1;
+  }
+  .q-audio .vinyl {
+    font-size: clamp(80px, 14vw, 220px);
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 12px 40px rgba(255, 184, 77, 0.3);
+  }
+  .q-audio .track-label {
+    font-size: clamp(16px, 1.6vw, 22px);
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .q-audio audio {
+    width: 100%;
+    max-width: 480px;
+    height: 44px;
+  }
+  /* Answer audio: title above the player */
+  .q-audio .track-title {
+    font-size: clamp(20px, 2.4vw, 32px);
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.25;
+    color: var(--ink);
+    max-width: 22ch;
+  }
+  .q-audio .track-title em {
+    font-style: normal;
+    color: var(--accent);
+    display: block;
+    font-size: 0.78em;
+    font-weight: 500;
+    margin-top: 6px;
+    letter-spacing: .02em;
+  }
+  .q-video video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  /* Answer slide — same layout but with answer badge */
+  .a-slide .answer {
+    margin-top: 28px;
+    padding: 22px 28px;
+    border-radius: 16px;
+    background: var(--answer-bg);
+    border: 1px solid rgba(255, 184, 77, 0.25);
+    box-shadow: 0 20px 50px rgba(255, 94, 126, 0.15);
+  }
+  .a-slide .answer-text { word-wrap: break-word; }
+  .a-slide .answer-label {
+    font-size: 12px;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .a-slide .answer-text {
+    font-size: clamp(22px, 2.4vw, 36px);
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .a-slide .answer-note {
+    margin-top: 10px;
+    font-size: clamp(14px, 1.2vw, 18px);
+    line-height: 1.4;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Section divider */
+  .divider-slide { text-align: center; align-items: center; }
+  .divider-slide .label {
+    font-size: clamp(14px, 1.4vw, 18px);
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .divider-slide h2 {
+    font-size: clamp(36px, 5.5vw, 80px);
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    max-width: 18ch;
+  }
+  .divider-slide .desc {
+    margin-top: 24px;
+    font-size: clamp(18px, 2vw, 26px);
+    color: var(--muted);
+    max-width: 32ch;
+    line-height: 1.4;
+  }
+
+  /* Help overlay */
+  .help {
+    position: fixed; inset: 0;
+    background: rgba(15, 10, 26, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .help.show { display: flex; }
+  .help-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 32px 40px;
+    min-width: 320px;
+  }
+  .help-card h3 { margin: 0 0 18px; font-weight: 600; }
+  .help-card kbd {
+    background: rgba(255,255,255,0.08);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .help-card ul { padding: 0; margin: 0; list-style: none; }
+  .help-card li { margin: 8px 0; color: var(--muted); }
+
+  /* Round counter */
+  .round-counter {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Timer */
+  .timer {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 22px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+    min-width: 160px;
+  }
+  .timer.hidden { display: none; }
+  .timer-phase {
+    font-size: 10px;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .timer-clock {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .timer.phase-read { border-color: rgba(120, 180, 255, 0.4); }
+  .timer.phase-read .timer-clock { color: #8ec1ff; }
+  .timer.phase-media { border-color: rgba(255, 184, 77, 0.4); }
+  .timer.phase-media .timer-clock { color: var(--accent); font-size: 22px; padding: 4px 0; }
+  .timer.phase-think {
+    border-color: rgba(255, 184, 77, 0.5);
+    background: rgba(255, 184, 77, 0.1);
+  }
+  .timer.phase-think .timer-clock { color: var(--accent); }
+  .timer.urgent {
+    border-color: rgba(255, 94, 126, 0.7);
+    background: rgba(255, 94, 126, 0.2);
+    animation: pulse 0.6s ease infinite alternate;
+  }
+  .timer.urgent .timer-clock { color: var(--accent-2); }
+  @keyframes pulse {
+    from { transform: translateX(-50%) scale(1); }
+    to   { transform: translateX(-50%) scale(1.08); }
+  }
+  .timer.phase-end {
+    border-color: rgba(255, 94, 126, 0.7);
+    background: rgba(255, 94, 126, 0.28);
+  }
+  .timer.phase-end .timer-clock { color: var(--accent-2); }
+
+  /* Confetti canvas */
+  .confetti {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 30;
+  }
+  .confetti.hidden { display: none; }
+
+  /* Mode badge (questions vs answers) */
+  .mode-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mode-questions { background: rgba(255, 184, 77, 0.18); color: var(--accent); }
+  .mode-answers   { background: rgba(255, 94, 126, 0.22); color: var(--accent-2); }
+
+  /* Print fallback for slide-style printing */
+  @media print {
+    .slide { display: block !important; page-break-after: always; }
+    .topbar, .footer { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="pill"><span id="modeBadge" class="mode-badge mode-questions">Вопросы</span></div>
+  <div class="pill"><span id="roundLabel">Раунд 1 · Советская классика</span></div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 0. Title -->
+  <section class="slide title-slide">
+    <h1>39.9 пока!</h1>
+    <div class="hint">→ или пробел — дальше · ← — назад · F — полный экран · ? — помощь</div>
+  </section>
+
+  <!-- 1. Round 1 intro (questions) -->
+  <section class="slide round-intro" data-round="1" data-mode="questions">
+    <div class="kicker">Раунд 1 · 8 вопросов</div>
+    <h2>Советская классика</h2>
+    <div class="desc">Фильмы, мультфильмы и фразы, на которых мы выросли</div>
+    <div class="rules-pill">1 балл за каждый правильный ответ</div>
+  </section>
+
+  <!-- 1.1 Бриллиантовая рука -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">
+          В «Бриллиантовой руке» управдом Варвара Сергеевна Плющ произносит фразу: <em>«Наши люди…»</em> — закончите мысль.
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/1-1.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 1.2 Москва слезам не верит -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-quote">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">
+          В каком фильме героиня встречается с отцом своего ребёнка и произносит эти слова?
+        </div>
+      </div>
+      <div class="q-quote">«В сорок лет жизнь только начинается, это уж я теперь точно знаю».</div>
+    </div>
+  </section>
+
+  <!-- 1.3 Джентльмены удачи -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">
+          В фильме «Джентльмены удачи» Доцент (герой Евгения Леонова) учит «феню». Какими словами герой угрожал сокамернику?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/1-3.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 1.4 Простоквашино -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">
+          В мультфильме «Трое из Простоквашино» почтальон Печкин отказывается отдавать посылку. Какой фразой-мемом он объясняет причину?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/1-4.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 1.5 Любовь и голуби -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-quote">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">В каком фильме звучит этот диалог?</div>
+      </div>
+      <div class="q-quote">
+        <span class="line">— Ах ты, сучка ты крашена!</span>
+        <span class="line">— Почему же крашеная? Это мой натуральный цвет.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.6 Ширли-мырли -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-quote">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">Из какого фильма 90-х эта фраза?</div>
+      </div>
+      <div class="q-quote">«Капитан! Этого пидора в Химках видал, деревянными членами торгует».</div>
+    </div>
+  </section>
+
+  <!-- 1.7 Бременские музыканты -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-quote">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">
+          Только став отцом дочери, всё начинаешь видеть иначе. О каком советском мультфильме речь?
+        </div>
+      </div>
+      <div class="q-quote">В этом советском мультфильме самый нормальный персонаж — король. Он просто хотел уберечь дочь от отношений с грязными хиппи.</div>
+    </div>
+  </section>
+
+  <!-- 1.8 Служебный роман -->
+  <section class="slide q-slide" data-round="1" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="question">
+          Вспомните фильм «Служебный роман». Какое слегка обидное прозвище подчинённые дали своей директрисе Людмиле Прокофьевне за глаза?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/1-8.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- End of round 1 questions -->
+  <section class="slide divider-slide" data-round="1" data-mode="questions">
+    <div class="label">Раунд 1 завершён</div>
+    <h2>Сдаём бланки</h2>
+    <div class="desc">Помощник собирает бланки. Сейчас будет разбор и подсчёт.</div>
+  </section>
+
+  <!-- ANSWERS section -->
+
+  <!-- Round 1 answers intro -->
+  <section class="slide round-intro" data-round="1" data-mode="answers">
+    <div class="kicker">Раунд 1 · разбор</div>
+    <h2>Правильные ответы</h2>
+    <div class="desc">Сверяемся, считаем баллы</div>
+  </section>
+
+  <!-- 1.1 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">«Наши люди…» — закончите мысль</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«…в булочную на такси не ездят!»</div>
+          <div class="answer-note">Варвара Плющ, «Бриллиантовая рука»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Наши_люди_в_булочную_на_такси_не_ездят.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.2 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">«В сорок лет жизнь только начинается»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Москва слезам не верит»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/в 40 лет.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.3 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">Какими словами Доцент угрожал сокамернику?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Моргалы выкалю»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Моргалы выкалю.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.4 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">Печкин и посылка</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Потому что у вас документов нету»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Я_вам_посылку_не_отдам_Потому_что_у_вас_документов_нету!.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.5 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">«Сучка ты крашена…»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Любовь и голуби»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/1-5.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.6 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">«Деревянными членами торгует»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Ширли-мырли»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Шырли_Мырли_Этот_пидор_деревянными.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1.7 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">Король и хиппи с цветочной поляной</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Бременские музыканты»</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/Бременские музыканты.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 1.8 answer -->
+  <section class="slide q-slide a-slide" data-round="1" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="question">Прозвище Людмилы Прокофьевны</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Мымра</div>
+        </div>
+      </div>
+      <div class="q-video portrait">
+        <video src="Ответы/Мымра.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 1 answers -->
+  <section class="slide divider-slide" data-round="1" data-mode="answers">
+    <div class="label">Раунд 1 закрыт</div>
+    <h2>Дальше — раунд 2</h2>
+    <div class="desc">Популярные фильмы и сериалы</div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ROUND 2 — Популярные фильмы и сериалы                         -->
+  <!-- ============================================================ -->
+
+  <!-- Round 2 intro (questions) -->
+  <section class="slide round-intro" data-round="2" data-mode="questions">
+    <div class="kicker">Раунд 2 · 9 вопросов</div>
+    <h2>Популярные фильмы и сериалы</h2>
+    <div class="desc">Друзья, Барни, Гарри Поттер и немного Матрицы</div>
+    <div class="rules-pill">1 балл за каждый правильный ответ</div>
+  </section>
+
+  <!-- 2.1 Росс Геллер -->
+  <section class="slide q-slide" data-round="2" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">
+          Сколько раз был женат Росс Геллер? <em>(Дополнительный балл — если назовёте имена всех жён.)</em>
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-1.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.2 Хагси -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">
+          Как звали плюшевого пингвина Джоуи, с которым он спал в обнимку и которого ни в какую не хотел отдавать маленькой девочке?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-2.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.3 Викторина -->
+  <section class="slide q-slide" data-round="2" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">
+          Вспомните серию из «Друзей», где ребята играют в викторину, а ставкой была квартира девочек. На каком вопросе девочки срезались? <em>(Бонусный балл — если назовёте сам ответ.)</em>
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-3.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.4 Кодекс Братана -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">
+          Какую книгу правил поведения для мужчин написал (а точнее, постоянно цитировал) Барни Стинсон?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-4.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.5 Синяя валторна -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">
+          Назовите предмет, который Тед украл из французского ресторана на первом свидании с Робин.
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/Тед и Робин.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.6 Карта Мародёров -->
+  <section class="slide q-slide" data-round="2" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">
+          Какое заклинание нужно произнести, чтобы открыть Карту Мародёров и увидеть, кто где ходит по Хогвартсу?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-6.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.7 Невил Долгопупс — жабросли -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">
+          Гарри Поттеру нужно было дышать под водой. Что ему посоветовал Невилл Долгопупс?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-7.png" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.8 Букля -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="question">
+          У Гарри Поттера был преданный домашний питомец. Назовите, как его зовут.
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/гарри поттер.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.9 Матрица — капсула -->
+  <section class="slide q-slide" data-round="2" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">9</div>
+        <div class="question">
+          В фильме «Матрица» Нео должен был выбрать между двумя капсулами. Какого цвета была та, после которой пути назад уже не было?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-9.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- End of round 2 questions -->
+  <section class="slide divider-slide" data-round="2" data-mode="questions">
+    <div class="label">Раунд 2 завершён</div>
+    <h2>Сдаём бланки</h2>
+    <div class="desc">Помощник собирает бланки. Сейчас будет разбор и подсчёт.</div>
+  </section>
+
+  <!-- Round 2 answers intro -->
+  <section class="slide round-intro" data-round="2" data-mode="answers">
+    <div class="kicker">Раунд 2 · разбор</div>
+    <h2>Правильные ответы</h2>
+    <div class="desc">Сверяемся, считаем баллы</div>
+  </section>
+
+  <!-- 2.1 answer — три жены Росса -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">Сколько раз был женат Росс Геллер?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">3 раза — Кэрол, Эмили, Рэйчел</div>
+        </div>
+      </div>
+      <div class="wives-grid">
+        <figure>
+          <img src="Ответы/Росс геллер и Кэрол.webp" alt="" />
+          <figcaption>Кэрол</figcaption>
+        </figure>
+        <figure>
+          <img src="Ответы/Росс Гэллер и Эмили.webp" alt="" />
+          <figcaption>Эмили</figcaption>
+        </figure>
+        <figure>
+          <img src="Ответы/Росс Гэллер и Рейчел.webp" alt="" />
+          <figcaption>Рэйчел</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2.2 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">Плюшевый пингвин Джоуи</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Хагси (Hugsy)</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/2-2.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.3 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">На каком вопросе девочки срезались?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Кем работает Чендлер Бинг?»</div>
+          <div class="answer-note">Или: «Должность Чендлера Бинга?»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Должность чендлера.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2.4 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">Книга правил Барни Стинсона</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Кодекс Братана» (The Bro Code)</div>
+        </div>
+      </div>
+      <div class="q-image contain"><img src="Ответы/the bro code.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.5 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">Что Тед украл из французского ресторана?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Синяя валторна (Blue French Horn)</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/Синяя валторна.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.6 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">Заклинание Карты Мародёров</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Торжественно клянусь, что замышляю только шалость»</div>
+          <div class="answer-note">I solemnly swear that I am up to no good</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Торжественно_клянусь,_что_замышляю_только_шалость_–_Фред_и_Джордж.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2.7 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">Совет Невила Долгопупса для дыхания под водой</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Жабросли</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/Жаворосли.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.8 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="question">Имя совы Гарри Поттера</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Букля / Хедвига</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/Хедвиг.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 2.9 answer -->
+  <section class="slide q-slide a-slide" data-round="2" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">9</div>
+        <div class="question">Цвет капсулы Нео</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Красная</div>
+        </div>
+      </div>
+      <div class="q-video portrait">
+        <video src="Ответы/Какую выбиришь таблетку_.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 2 -->
+  <section class="slide divider-slide" data-round="2" data-mode="answers">
+    <div class="label">Раунд 2 закрыт</div>
+    <h2>Дальше — раунд 3</h2>
+    <div class="desc">Музыкальный</div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ROUND 3 — Музыкальный                                          -->
+  <!-- ============================================================ -->
+
+  <!-- Round 3 intro -->
+  <section class="slide round-intro" data-round="3" data-mode="questions">
+    <div class="kicker">Раунд 3 · 10 треков</div>
+    <h2>Музыкальный</h2>
+    <div class="desc">Группа + песня — 1 балл. Что-то одно — 0,5 балла.</div>
+    <div class="rules-pill">Нарезка играет автоматически</div>
+  </section>
+
+  <!-- 3.1 — Земфира · Искала -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 1</div>
+        <audio src="Вопросы/3-1.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.2 — Кино · Группа крови -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 2</div>
+        <audio src="Вопросы/3-2.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.3 — Звери · Районы-кварталы -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 3</div>
+        <audio src="Вопросы/3-3.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.4 — МакSим · Знаешь ли ты -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">Угадайте исполнительницу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 4</div>
+        <audio src="Вопросы/3-4.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.5 — t.A.T.u. · Нас не догонят -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 5</div>
+        <audio src="Вопросы/3-5.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.6 — Иван Дорн · Стыцамен -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">Угадайте исполнителя и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 6</div>
+        <audio src="Вопросы/3-6.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.7 — Nirvana · Smells Like Teen Spirit -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 7</div>
+        <audio src="Вопросы/3-7.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.8 — Britney Spears · Oops!… -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="question">Угадайте исполнительницу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 8</div>
+        <audio src="Вопросы/3-8.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.9 — Bon Jovi · It's My Life -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">9</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 9</div>
+        <audio src="Вопросы/3-9.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.10 — Bomfunk MCs · Freestyler -->
+  <section class="slide q-slide" data-round="3" data-mode="questions">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">10</div>
+        <div class="question">Угадайте группу и песню</div>
+      </div>
+      <div class="q-audio">
+        <div class="vinyl">♪</div>
+        <div class="track-label">Трек 10</div>
+        <audio src="Вопросы/3-10.MP3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 3 questions -->
+  <section class="slide divider-slide" data-round="3" data-mode="questions">
+    <div class="label">Раунд 3 завершён</div>
+    <h2>Сдаём бланки</h2>
+    <div class="desc">Помощник собирает бланки. Сейчас будет разбор и подсчёт.</div>
+  </section>
+
+  <!-- Round 3 answers intro -->
+  <section class="slide round-intro" data-round="3" data-mode="answers">
+    <div class="kicker">Раунд 3 · разбор</div>
+    <h2>Правильные ответы</h2>
+    <div class="desc">Слушаем целиком, считаем баллы</div>
+  </section>
+
+  <!-- 3.1 answer — Земфира -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Земфира — «Искала»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Земфира<em>Искала</em></div>
+        <audio src="Ответы/Zemfira_-_Iskala_47828820.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.2 answer — Кино -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Кино» — «Группа крови»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Кино<em>Группа крови</em></div>
+        <audio src="Ответы/Viktor_Cojj_-_Gruppa_krovi_47828908.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.3 answer — Звери -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Звери» — «Районы-кварталы»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Звери<em>Районы-кварталы</em></div>
+        <audio src="Ответы/Zveri_-_Rajjony-kvartaly_63900440.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.4 answer — МакSим -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">МакSим — «Знаешь ли ты»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">МакSим<em>Знаешь ли ты</em></div>
+        <audio src="Ответы/MakSim_-_Znaesh_li_ty_47835999.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.5 answer — t.A.T.u. -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">t.A.T.u. — «Нас не догонят»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">t.A.T.u.<em>Нас не догонят</em></div>
+        <audio src="Ответы/tATu_-_Nas_ne_dogonyat_48274394.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.6 answer — Иван Дорн -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Иван Дорн — «Стыцамен»</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Иван Дорн<em>Стыцамен</em></div>
+        <audio src="Ответы/Ivan_Dorn_-_Stycamjen_48213771.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.7 answer — Nirvana -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Nirvana — Smells Like Teen Spirit</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Nirvana<em>Smells Like Teen Spirit</em></div>
+        <audio src="Ответы/Nirvana_-_Smells_Like_Teen_Spirit_47829249.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.8 answer — Britney Spears -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">8</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Britney Spears — Oops!… I Did It Again</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Britney Spears<em>Oops!… I Did It Again</em></div>
+        <audio src="Ответы/Britney_Spears_-_OopsI_Did_It_Again_47836086.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.9 answer — Bon Jovi -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">9</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Bon Jovi — It's My Life</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Bon Jovi<em>It's My Life</em></div>
+        <audio src="Ответы/Bon_Jovi_-_Its_My_Life_47852367.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3.10 answer — Bomfunk MCs -->
+  <section class="slide q-slide a-slide" data-round="3" data-mode="answers">
+    <div class="q-layout with-audio">
+      <div class="q-text-block">
+        <div class="num">10</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Bomfunk MCs — Freestyler</div>
+        </div>
+      </div>
+      <div class="q-audio">
+        <div class="track-title">Bomfunk MCs<em>Freestyler</em></div>
+        <audio src="Ответы/Bomfunk_MCs_-_Freestyler_48325381.mp3" controls preload="auto" data-autoplay></audio>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 3 -->
+  <section class="slide divider-slide" data-round="3" data-mode="answers">
+    <div class="label">Раунд 3 закрыт</div>
+    <h2>Дальше — раунд 4</h2>
+    <div class="desc">Рекламная пауза</div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ROUND 4 — Рекламная пауза                                      -->
+  <!-- ============================================================ -->
+
+  <!-- Round 4 intro -->
+  <section class="slide round-intro" data-round="4" data-mode="questions">
+    <div class="kicker">Раунд 4 · 7 вопросов</div>
+    <h2>Рекламная пауза</h2>
+    <div class="desc">Реклама 90-х и 2000-х: вспомним мемы, бренды и фразы из ТВ.</div>
+    <div class="rules-pill">1 балл за каждый правильный ответ</div>
+  </section>
+
+  <!-- 4.1 — Invite -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">
+          Этот напиток в маленьких пакетиках предлагали «просто добавить в воду». Как он назывался?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/инвайт - скриншот.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.2 — Fairy / Вилларибо и Виллабаджо -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">
+          Как назывались две деревни, в одной из которых посуду мыли по старинке, а в другой — супер-средством Fairy?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/виларибо.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.3 — Сколько вешать в граммах -->
+  <section class="slide q-slide" data-round="4" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">
+          Посмотрите на картинку и вспомните главный вопрос-мем, который задавал актёр в этой рекламе. <em>(Бонусный балл — если вспомните, что именно рекламировалось.)</em>
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/сколько в граммах.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.4 — Stimorol -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">
+          В начале 2000-х эта реклама жевательной резинки научила нас, что «иногда лучше жевать, чем говорить». Назовите бренд жвачки.
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/иногда лучше жевать.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4.5 — Моя семья -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">
+          В рекламе сока девочка произносит легендарную фразу: <em>«А ты налей и отойди!»</em>. О каком соке шла речь?
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/а ты налей и отойди.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.6 — Фруктовый сад -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">
+          В рекламе какого бренда маленькие дети в костюмах фруктов рассказывали стишки на утреннике, подарив нам легендарный мем <em>«А я — томат!»</em>?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/а я томат.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.7 — Snickers (белки) -->
+  <section class="slide q-slide" data-round="4" data-mode="questions">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">
+          Какой бренд рекламируется в этом ролике?
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Вопросы/вопрос про рекламу.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 4 questions -->
+  <section class="slide divider-slide" data-round="4" data-mode="questions">
+    <div class="label">Раунд 4 завершён</div>
+    <h2>Сдаём бланки</h2>
+    <div class="desc">Помощник собирает бланки. Сейчас будет разбор и подсчёт.</div>
+  </section>
+
+  <!-- Round 4 answers intro -->
+  <section class="slide round-intro" data-round="4" data-mode="answers">
+    <div class="kicker">Раунд 4 · разбор</div>
+    <h2>Правильные ответы</h2>
+    <div class="desc">Сверяемся, считаем баллы</div>
+  </section>
+
+  <!-- 4.1 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">«Просто добавь воды»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Invite (Инвайт)</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Инвайт.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4.2 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">Две деревни Fairy</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Вилларибо и Виллабаджо</div>
+        </div>
+      </div>
+      <div class="q-image contain"><img src="Ответы/виларибо.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.3 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">«Сколько вешать в граммах?»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Сколько вешать в граммах?»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Сколько в граммах.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4.4 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">«Иногда лучше жевать, чем говорить»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Stimorol (Стиморол)</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/иногда лучше жевать.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- 4.5 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">«А ты налей и отойди!»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Моя семья»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Моя семья.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4.6 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">«А я — томат!»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Фруктовый сад»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/фрукт.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4.7 answer -->
+  <section class="slide q-slide a-slide" data-round="4" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">Реклама с белками</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Snickers (Сникерс)</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/snickers_больше орехов.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of round 4 -->
+  <section class="slide divider-slide" data-round="4" data-mode="answers">
+    <div class="label">Раунд 4 закрыт</div>
+    <h2>Финальный раунд</h2>
+    <div class="desc">Со ставками 1–3 балла. Игра на риск.</div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FINAL ROUND                                                    -->
+  <!-- ============================================================ -->
+
+  <!-- Final intro -->
+  <section class="slide round-intro" data-round="final" data-mode="questions">
+    <div class="kicker">Финальный раунд · 7 вопросов</div>
+    <h2>Игра на риск</h2>
+    <div class="desc">К каждому ответу команда ставит 1, 2 или 3 балла. Угадали — баллы плюсуются. Не угадали — минусуются.</div>
+    <div class="rules-pill">Ставка делается ДО ответа</div>
+  </section>
+
+  <!-- F.1 — Икра / Верещагин -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">
+          У таможенника Верещагина, как мы помним, «таможня даёт добро». Но была одна вещь, которую он физически не мог больше видеть и есть, хотя жена настаивала. О какой еде речь?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/верещагин.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.2 — Ким Ки-Дук -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image text-wide">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">
+          Самый известный и визуально безупречный фильм Ким Ки-Дука имеет циклическое название, состоящее из времён года. Перечислите все времена года в том порядке, в котором они идут в названии, учитывая, что одно из них повторяется дважды.
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/ким ки.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.3 — Леон -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">
+          У профессионального киллера Леона был друг, о котором он заботился и говорил, что у них много общего, например, отсутствие корней. Кто этот друг?
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/Леон.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.4 — Кин-дза-дза -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image text-wide">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">
+          В советском киберпанке Данелии «Кин-дза-дза!» в галактике Кин-дза-дза статус человека определялся цветом штанов. Какой цвет считался самым привилегированным? <em>(Бонусный балл — за то, что назовёте самый ценный ресурс этой вселенной.)</em>
+        </div>
+      </div>
+      <div class="q-image"><img src="Вопросы/кин дза дза.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.5 — Брат 2 (стих) -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-quote">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">
+          В каком фильме герой декламирует этот стих? <em>(Бонусный балл — если назовёте имя и фамилию героя.)</em>
+        </div>
+      </div>
+      <div class="q-quote poem">
+        <span class="line">Я узнал, что у меня</span>
+        <span class="line">Есть огромная семья —</span>
+        <span class="line">И тропинка, и лесок,</span>
+        <span class="line">В поле каждый колосок,</span>
+        <span class="line">Речка, небо голубое —</span>
+        <span class="line">Это всё моё, родное,</span>
+        <span class="line">Это родина моя,</span>
+        <span class="line">Всех люблю на свете я!</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- F.6 — Матрица код -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-image text-wide">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">
+          Дизайнер фильма «Матрица» признался, что знаменитый «падающий» зелёный код (цифры и иероглифы) он не выдумывал, а просто отсканировал страницы из книги своей жены. Что это была за книга?
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/матрица.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.7 — Любимый мультфильм именинницы -->
+  <section class="slide q-slide" data-round="final" data-mode="questions" data-think-time="40">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">
+          Сейчас посмотрим отрывок из самого любимого советского мультфильма именинницы. Как он называется?
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/мультфильм - добрый эй.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- End of final questions -->
+  <section class="slide divider-slide" data-round="final" data-mode="questions">
+    <div class="label">Финал завершён</div>
+    <h2>Сдаём бланки</h2>
+    <div class="desc">Помощник собирает бланки. Сейчас будет разбор.</div>
+  </section>
+
+  <!-- Final answers intro -->
+  <section class="slide round-intro" data-round="final" data-mode="answers">
+    <div class="kicker">Финал · разбор</div>
+    <h2>Правильные ответы</h2>
+    <div class="desc">Считаем баллы. Не забываем про ставки.</div>
+  </section>
+
+  <!-- F.1 answer — Икра -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">1</div>
+        <div class="question">Чего не мог есть Верещагин?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Чёрная икра</div>
+          <div class="answer-note">«Опять ты мне эту икру поставила! Не могу я её, проклятую, есть!» — «Белое солнце пустыни»</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/Икра.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- F.2 answer — Ким Ки-Дук -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">2</div>
+        <div class="question">Фильм Ким Ки-Дука</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Весна, лето, осень, зима… и снова весна»</div>
+        </div>
+      </div>
+      <div class="q-image contain"><img src="Ответы/весна-лето.png" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.3 answer — Леон -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">3</div>
+        <div class="question">«Друг» Леона</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Комнатное растение (аглаонема)</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/Леон-цветок.jpg" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.4 answer — Кин-дза-дза -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">4</div>
+        <div class="question">Самый привилегированный цвет штанов в Кин-дза-дза</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Малиновые штаны</div>
+          <div class="answer-note">Бонус: КЦ (ка-цэ) — спички</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/малиновые штаны.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- F.5 answer — Брат 2 -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-video">
+      <div class="q-text-block">
+        <div class="num">5</div>
+        <div class="question">«Я узнал, что у меня есть огромная семья…»</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Брат 2»</div>
+          <div class="answer-note">За «Брат» — 0,5 балла. Бонус: герой — Данила Багров.</div>
+        </div>
+      </div>
+      <div class="q-video">
+        <video src="Ответы/я узнал.mp4" controls preload="auto" playsinline></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- F.6 answer — Матрица -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">6</div>
+        <div class="question">Что было в книге, которую отсканировал дизайнер «Матрицы»?</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">Кулинарная книга</div>
+          <div class="answer-note">Точнее — рецепты суши на японском</div>
+        </div>
+      </div>
+      <div class="q-image"><img src="Ответы/матрица2.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- F.7 answer — Ух ты, говорящая рыба -->
+  <section class="slide q-slide a-slide" data-round="final" data-mode="answers">
+    <div class="q-layout with-image">
+      <div class="q-text-block">
+        <div class="num">7</div>
+        <div class="question">Любимый мультфильм именинницы</div>
+        <div class="answer">
+          <div class="answer-label">Ответ</div>
+          <div class="answer-text">«Ух ты, говорящая рыба!»</div>
+        </div>
+      </div>
+      <div class="q-image contain"><img src="Ответы/ух ты говорящая рыба.webp" alt="" /></div>
+    </div>
+  </section>
+
+  <!-- THE END -->
+  <section class="slide divider-slide" data-round="final" data-mode="answers" data-confetti>
+    <div class="label">Игра окончена</div>
+    <h2>Награждение!</h2>
+    <div class="desc">Подсчитываем итоговые баллы и поздравляем команду-победителя.</div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <div id="slideCounter">1 / 1</div>
+  <div class="progress"><div id="progressBar" style="width:0%"></div></div>
+  <div>← → для навигации · ? — помощь</div>
+</div>
+
+<!-- Timer -->
+<div class="timer hidden" id="timer">
+  <div class="timer-phase">Готовимся</div>
+  <div class="timer-clock">—</div>
+</div>
+
+<!-- Confetti canvas (for final slide) -->
+<canvas class="confetti hidden" id="confetti"></canvas>
+
+<!-- Help overlay -->
+<div class="help" id="help">
+  <div class="help-card">
+    <h3>Управление</h3>
+    <ul>
+      <li><kbd>→</kbd> или <kbd>пробел</kbd> — следующий слайд</li>
+      <li><kbd>←</kbd> — предыдущий</li>
+      <li><kbd>F</kbd> — полноэкранный режим</li>
+      <li><kbd>Home</kbd> / <kbd>End</kbd> — в начало / в конец</li>
+      <li><kbd>?</kbd> или <kbd>H</kbd> — показать/скрыть помощь</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let idx = 0;
+
+  const counter = document.getElementById('slideCounter');
+  const bar = document.getElementById('progressBar');
+  const modeBadge = document.getElementById('modeBadge');
+  const roundLabel = document.getElementById('roundLabel');
+  const help = document.getElementById('help');
+
+  // ----- Timer state -----
+  let timerToken = 0;
+  const timerEl = document.getElementById('timer');
+  const timerPhaseEl = timerEl.querySelector('.timer-phase');
+  const timerClockEl = timerEl.querySelector('.timer-clock');
+
+  function setTimerPhase(phaseClass, label, clockText) {
+    timerEl.className = 'timer phase-' + phaseClass;
+    timerPhaseEl.textContent = label;
+    if (clockText !== undefined) timerClockEl.textContent = clockText;
+  }
+
+  function hideTimer() {
+    timerEl.className = 'timer hidden';
+  }
+
+  function sleep(ms, token) {
+    return new Promise(resolve => {
+      const id = setTimeout(resolve, ms);
+      const check = setInterval(() => {
+        if (token !== timerToken) { clearTimeout(id); clearInterval(check); resolve(); }
+      }, 100);
+    });
+  }
+
+  function runPhase(phaseClass, label, seconds, token, urgentLast = 0) {
+    return new Promise(resolve => {
+      setTimerPhase(phaseClass, label, seconds);
+      let remaining = seconds;
+      const tick = setInterval(() => {
+        if (token !== timerToken) { clearInterval(tick); resolve(); return; }
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(tick);
+          timerClockEl.textContent = '0';
+          resolve();
+        } else {
+          timerClockEl.textContent = remaining;
+          if (phaseClass === 'think') playTickSound();
+          if (urgentLast && remaining <= urgentLast) timerEl.classList.add('urgent');
+          else timerEl.classList.remove('urgent');
+        }
+      }, 1000);
+    });
+  }
+
+  function waitForMediaEnd(media, token) {
+    return new Promise(resolve => {
+      const finish = () => {
+        media.removeEventListener('ended', finish);
+        clearTimeout(safety); clearInterval(check);
+        resolve();
+      };
+      media.addEventListener('ended', finish);
+      const safety = setTimeout(finish, 60000);
+      const check = setInterval(() => {
+        if (token !== timerToken) finish();
+      }, 200);
+    });
+  }
+
+  // Single AudioContext, lazily created (avoids autoplay-unlock issues)
+  let _audioCtx = null;
+  function getAudioCtx() {
+    if (!_audioCtx) {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        _audioCtx = new Ctx();
+      } catch (e) {}
+    }
+    return _audioCtx;
+  }
+
+  function playTickSound() {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1800;
+      filter.Q.value = 4;
+      osc.type = 'square';
+      osc.frequency.value = 1400;
+      osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      const t = ctx.currentTime;
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.04);
+      osc.start(t);
+      osc.stop(t + 0.05);
+    } catch (e) {}
+  }
+
+  // ----- Confetti -----
+  let confettiActive = false;
+  function launchConfetti() {
+    const canvas = document.getElementById('confetti');
+    if (!canvas) return;
+    canvas.classList.remove('hidden');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const colors = ['#ffb84d', '#ff5e7e', '#8ec1ff', '#a8e6cf', '#ffd6a5', '#ffffff'];
+    const particles = [];
+
+    function spawnBurst(originX, originY, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.random() * Math.PI) - Math.PI; // upward fan
+        const speed = Math.random() * 18 + 8;
+        particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed * 0.6,
+          vy: Math.sin(angle) * speed,
+          gravity: 0.35,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 8 + 5,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 0.4,
+          life: 1,
+          shape: Math.random() < 0.5 ? 'rect' : 'circle'
+        });
+      }
+    }
+
+    // Initial bursts from left, center, right
+    spawnBurst(window.innerWidth * 0.2, window.innerHeight * 0.65, 70);
+    spawnBurst(window.innerWidth * 0.5, window.innerHeight * 0.55, 90);
+    spawnBurst(window.innerWidth * 0.8, window.innerHeight * 0.65, 70);
+
+    // A second wave shortly after
+    setTimeout(() => spawnBurst(window.innerWidth * 0.3, window.innerHeight * 0.6, 60), 700);
+    setTimeout(() => spawnBurst(window.innerWidth * 0.7, window.innerHeight * 0.6, 60), 900);
+
+    confettiActive = true;
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.vy += p.gravity;
+        p.vx *= 0.99;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        if (p.y > canvas.height + 50) p.life = 0;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        if (p.shape === 'rect') {
+          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      if (particles.length > 0 && confettiActive) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.classList.add('hidden');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiActive = false;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  function stopConfetti() {
+    confettiActive = false;
+    const canvas = document.getElementById('confetti');
+    if (canvas) {
+      canvas.classList.add('hidden');
+      const ctx = canvas.getContext('2d');
+      ctx && ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  function playEndBuzz() {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    try {
+      const start = ctx.currentTime;
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        const t0 = start + i * 0.27;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.55, t0 + 0.01);
+        gain.gain.setValueAtTime(0.55, t0 + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+        osc.start(t0);
+        osc.stop(t0 + 0.24);
+      }
+    } catch (e) {}
+  }
+
+  async function startTimerForSlide(slide, token) {
+    const isQuestion = slide.classList.contains('q-slide') && slide.dataset.mode === 'questions';
+    if (!isQuestion) { hideTimer(); return; }
+
+    const thinkSec = parseInt(slide.dataset.thinkTime || '30', 10);
+    const readSec = parseInt(slide.dataset.readingTime || '10', 10);
+
+    // Phase 1: Reading
+    await runPhase('read', 'Читаем вопрос', readSec, token);
+    if (token !== timerToken) return;
+
+    // Phase 2: Media (if any with autoplay)
+    const media = slide.querySelector('[data-autoplay]');
+    if (media) {
+      setTimerPhase('media', 'Смотрим / слушаем', '♪');
+      await waitForMediaEnd(media, token);
+      if (token !== timerToken) return;
+    }
+
+    // Phase 3: Thinking
+    await runPhase('think', 'Время на ответ', thinkSec, token, 5);
+    if (token !== timerToken) return;
+
+    // End
+    playEndBuzz();
+    setTimerPhase('end', 'Время вышло', '0');
+  }
+
+  function show(i) {
+    idx = Math.max(0, Math.min(total - 1, i));
+    timerToken++;
+    document.querySelectorAll('video, audio').forEach(m => { m.pause(); });
+    slides.forEach((s, n) => s.classList.toggle('active', n === idx));
+    counter.textContent = `${idx + 1} / ${total}`;
+    bar.style.width = `${((idx + 1) / total) * 100}%`;
+
+    const slide = slides[idx];
+    const mode = slide.dataset.mode;
+    if (mode === 'answers') {
+      modeBadge.textContent = 'Ответы';
+      modeBadge.className = 'mode-badge mode-answers';
+    } else if (mode === 'questions') {
+      modeBadge.textContent = 'Вопросы';
+      modeBadge.className = 'mode-badge mode-questions';
+    } else {
+      modeBadge.textContent = 'Старт';
+      modeBadge.className = 'mode-badge mode-questions';
+    }
+
+    const round = slide.dataset.round;
+    if (round === '1') roundLabel.textContent = 'Раунд 1 · Советская классика';
+    else if (round === '2') roundLabel.textContent = 'Раунд 2 · Фильмы и сериалы';
+    else if (round === '3') roundLabel.textContent = 'Раунд 3 · Музыкальный';
+    else if (round === '4') roundLabel.textContent = 'Раунд 4 · Рекламная пауза';
+    else if (round === 'final') roundLabel.textContent = 'Финальный раунд';
+    else roundLabel.textContent = 'Квиз на ДР';
+
+    // Autoplay any audio/video on this slide marked with data-autoplay
+    const autoMedia = slide.querySelector('[data-autoplay]');
+    if (autoMedia) {
+      try { autoMedia.currentTime = 0; } catch (e) {}
+      autoMedia.play().catch(() => {/* browser blocked autoplay — user will press play */});
+    }
+
+    // Start timer for question slides
+    startTimerForSlide(slide, timerToken);
+
+    // Confetti for slides marked with data-confetti
+    if (slide.hasAttribute('data-confetti')) launchConfetti();
+    else stopConfetti();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); show(idx + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); show(idx - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); show(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); show(total - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (e.key === '?' || e.key === 'h' || e.key === 'H' || e.key === '/') {
+      e.preventDefault();
+      help.classList.toggle('show');
+    } else if (e.key === 'Escape') {
+      help.classList.remove('show');
+    }
+  });
+
+  // Click anywhere to advance (right half) / go back (left half)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.help-card')) return;
+    if (e.target.closest('.q-video, .q-audio, video, audio')) return;
+    if (help.classList.contains('show')) { help.classList.remove('show'); return; }
+    if (e.clientX > window.innerWidth * 0.35) show(idx + 1);
+    else show(idx - 1);
+  });
+
+  show(0);
+
+  // Eagerly start buffering all videos so they're ready by the time we get to them
+  document.querySelectorAll('video').forEach(v => {
+    try { v.load(); } catch (e) { /* ignore */ }
+  });
+</script>
+
+</body>
+</html>
