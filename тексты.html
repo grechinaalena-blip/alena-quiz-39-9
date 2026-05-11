@@ -19,6 +19,7 @@
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  html, body { overflow-x: hidden; }
   body {
     font-family: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
     color: var(--ink);
@@ -120,12 +121,23 @@
   }
   .sh-artist { font-size: 14px; color: var(--accent); margin-bottom: 4px; }
 
-  .lyrics-wrap { flex: 1; overflow: hidden; padding: 12px 0 8px; }
+  .lyrics-wrap {
+    flex: 1;
+    overflow: hidden;
+    padding: 12px 0 8px;
+    min-width: 0;
+    max-width: 100%;
+  }
   .lyrics {
     margin: 0;
     height: 100%;
+    width: 100%;
+    max-width: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
     font-family: inherit;
     color: var(--ink);
     line-height: 1.55;
@@ -147,7 +159,14 @@
     column-gap: 28px;
   }
   @media (max-width: 600px) {
-    .lyrics.two-col, .lyrics.two-col.dense { column-count: 1; font-size: clamp(15px, 4vw, 18px); }
+    .lyrics,
+    .lyrics.two-col,
+    .lyrics.two-col.dense {
+      column-count: 1 !important;
+      column-gap: 0 !important;
+      column-fill: auto !important;
+    }
+    .song-slide { padding: 12px 14px; }
   }
 
   .song-nav {
