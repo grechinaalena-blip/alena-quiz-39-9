@@ -159,6 +159,7 @@
     column-gap: 28px;
   }
   @media (max-width: 600px) {
+    /* On mobile: ditch nested scroll. Whole song-slide scrolls naturally. */
     .lyrics,
     .lyrics.two-col,
     .lyrics.two-col.dense {
@@ -166,7 +167,48 @@
       column-gap: 0 !important;
       column-fill: auto !important;
     }
-    .song-slide { padding: 12px 14px; }
+    .slide.active.song-slide {
+      display: block;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 0;
+    }
+    .song-slide .sh {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: linear-gradient(180deg, rgba(15,10,26,0.98) 60%, rgba(15,10,26,0.85));
+      backdrop-filter: blur(6px);
+      padding: 12px 16px 10px;
+      margin: 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .song-slide .lyrics-wrap {
+      flex: none;
+      overflow: visible;
+      padding: 16px 16px 16px;
+      max-width: 100%;
+    }
+    .song-slide .lyrics {
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      padding: 0;
+      font-size: 18px !important;
+      line-height: 1.6;
+    }
+    .song-slide .song-nav {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      background: linear-gradient(0deg, rgba(15,10,26,0.98) 60%, rgba(15,10,26,0.85));
+      backdrop-filter: blur(6px);
+      padding: 10px 16px;
+      margin: 0;
+      border-top: 1px solid var(--card-border);
+    }
   }
 
   .song-nav {
